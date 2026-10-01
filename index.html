@@ -3,6 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style id="guarda-css">html{visibility:hidden}</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(async function () {
+  const css = document.getElementById('guarda-css');
+
+  // Só exige login quando está no GitHub Pages
+  if (!location.hostname.endsWith('github.io')) { css.remove(); return; }
+
+  const db = supabase.createClient(
+    'https://jvjfpxrknggeodjgamyu.supabase.co',
+    'sb_publishable_yxHF_N1gjdGoHMEoM5GF2w_QVMzzMF0'
+  );
+
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { location.replace('index.html'); return; }
+
+  const { data: perfil } = await db.from('perfis')
+    .select('aprovado').eq('id', session.user.id).single();
+  if (!perfil || !perfil.aprovado) {
+    await db.auth.signOut();
+    location.replace('index.html');
+    return;
+  }
+
+  css.remove();
+})();
+</script>
     <title>Acesso ao Sistema - Base Territorial</title>
     <!-- SDK Oficial do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -19,7 +47,7 @@
         }
         body {
             font-family: Arial, sans-serif;
-            background-image: url('banckground.png');
+            background-image: url('background.png');
             background-size: 100% 100%;
             background-position: center;
             background-repeat: no-repeat;
