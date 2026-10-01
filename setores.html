@@ -4,6 +4,41 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Setores Ordenados</title>
+
+<!-- SDK Oficial do Supabase e Proteção de Acesso -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const SUPABASE_URL = 'https://rdxklpkukmuwwetftqde.supabase.co';
+    const SUPABASE_ANON_KEY = 'SUA_CHAVE_API_COPIADA_AQUI'; // Substitua pela sua chave anon public
+
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function contaAprovada(userId) {
+        const { data, error } = await _supabase
+            .from('perfis')
+            .select('aprovado')
+            .eq('id', userId)
+            .maybeSingle();
+        if (error) return false;
+        return data ? data.aprovado === true : false;
+    }
+
+    (async function protegerPagina() {
+        const { data: { session } } = await _supabase.auth.getSession();
+        
+        if (!session) {
+            window.location.replace('index.html');
+            return;
+        }
+
+        const aprovado = await contaAprovada(session.user.id);
+        if (!aprovado) {
+            await _supabase.auth.signOut();
+            window.location.replace('index.html');
+        }
+    })();
+</script>
+
 <style>
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 --bg:#f6f7f9;--card:#fff;--ink:#1d2330;--mut:#667085;--head:#1c4587;--headink:#fff;--line:#d9dde5;--zebra:#eef0f3;--done:#a8c9ec;--accent:#1c4587}
