@@ -47,7 +47,8 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 Georgia,"Times New Roman",serif}
-header{padding:20px 20px 8px}
+header{padding:20px 20px 8px;position:relative}
+#th{position:absolute;top:16px;right:20px;width:40px;height:40px;padding:0;font-size:20px;line-height:1;border-radius:50%}
 h1{margin:0;font-size:24px}
 .sub{color:var(--mut);font-size:14px;margin-top:2px}
 .bar{display:flex;flex-wrap:wrap;gap:8px;padding:8px 20px 14px;align-items:center}
@@ -59,8 +60,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .stats{margin-left:auto;color:var(--mut);font-size:14px}
 .wrap{margin:0 20px 40px;overflow:auto;max-height:calc(100vh - 170px);border:1px solid var(--line);border-radius:6px;background:var(--card)}
 table{border-collapse:collapse;width:100%;min-width:1700px}
-th{background:var(--head);color:var(--headink);padding:10px 8px;text-align:center;position:sticky;top:0;white-space:nowrap;z-index:2;border-right:1px solid rgba(255,255,255,.25)}
-td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;background:inherit}
+th{background:var(--head);color:var(--headink);padding:10px 8px;text-align:center;position:sticky;top:0;white-space:nowrap;z-index:2}
+td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap;background:inherit}
 td.ml{white-space:pre-wrap;min-width:150px}
 tbody tr{background:var(--card)}
 tbody tr:nth-child(even){background:var(--zebra)}
@@ -90,6 +91,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </head>
 <body>
 <header>
+  <button id="th" aria-label="Alternar claro/escuro" title="Alternar claro/escuro">🌙</button>
   <h1>Setores Ordenados</h1>
   <div class="sub"><span id="sync">Conectando à planilha…</span> · <b id="sv"></b></div>
 </header>
@@ -103,7 +105,6 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <button id="imp">Importar CSV</button>
   <button id="rf">Atualizar da planilha</button>
   <button id="exp">Exportar CSV</button>
-  <button id="th">🌙 Escuro</button>
   <span class="stats" id="st"></span>
 </div>
 <div class="wrap"><table>
@@ -147,7 +148,7 @@ const seed=[["330455705211735",344,116,1],["330455705211693",136,25],["330455705
  .map(r=>mk(r[0],r[1],r[2],BO,r[3],r[4]?ct:null));
 // ===== CONFIGURAÇÃO =====
 const SHEET_ID="1Bu5hq9aRMeWh-4bk9-34QZ0InyrtitQEved6-iEQ7Dc",GID="1534942531";
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbyCN1MEM9tKXqBnr9AkA8vfgzr8GeZaJ4moyHLdIctHTjE_yY_WB6jskwj7h41SBILvdg/exec"; // cole aqui a URL do Apps Script (veja setores-apps-script.gs) para gravar na planilha
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbzBlQDBqJkdd09QhfsKCqYM2NlSqj9qKN0EO6vmq5mmvwhaxqVyH186fpBvduWmue8/exec"; // cole aqui a URL do Apps Script (veja setores-apps-script.gs) para gravar na planilha
 const EDIT=!!SCRIPT_URL;
 let data=[];
 try{const s=localStorage.getItem("setores_v1");data=s?JSON.parse(s):seed}catch(e){data=seed}
@@ -195,7 +196,8 @@ function render(){
  $("tb").innerHTML=rows.map(([d,i])=>`<tr class="${d.ok?"done":""}" data-i="${i}">`+K.map(k=>k==="ok"?`<td class="chk"><input type="checkbox" ${d.ok?"checked":""} aria-label="Concluído"></td>`:`<td ${EDIT&&!d.ok?'contenteditable="plaintext-only"':""} ${ML.includes(k)?'class="ml" title="Enter = nova linha · Ctrl+Enter = salvar"':""} data-k="${k}">${esc(d[k])}</td>`).join("")+`<td class="act"><button title="Excluir setor" aria-label="Excluir" ${d.ok?"disabled":""}>✕</button></td></tr>`).join("");
  $("em").hidden=rows.length>0;
  const done=data.filter(d=>d.ok).length;
- $("st").textContent=`${data.length} setores · ${done} concluídos · ${data.length-done} pendentes`;
+ const pc=n=>(data.length?n/data.length*100:0).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%";
+ $("st").textContent=`${data.length} setores · ${done} concluídos (${pc(done)}) · ${data.length-done} pendentes (${pc(data.length-done)})`;
 }
 const upd=()=>$("un").disabled=!U.length;
 function setVal(d,k,v,rec=true){const old=d[k],ant=d.setor;if(old===v)return;d[k]=v;if(rec)U.push({t:"set",s:d.setor,k,old});
@@ -224,7 +226,7 @@ function csvLine(a){return a.map(v=>{v=String(v??"");return /[";\n]/.test(v)?'"'
 function dl(n,rows){const t="\ufeff"+rows.map(csvLine).join("\n");try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/csv;charset=utf-8"}));a.download=n;a.click()}catch(e){alert("Não foi possível baixar o arquivo neste ambiente.")}}
 $("exp").onclick=()=>dl("setores.csv",[H].concat(data.map(d=>K.map(k=>k==="ok"?(d.ok?"Sim":"Não"):d[k]))));
 // ===== Tema =====
-function theme(t){document.documentElement.dataset.theme=t;$("th").textContent=t==="dark"?"☀ Claro":"🌙 Escuro";try{localStorage.setItem("tema",t)}catch(e){}}
+function theme(t){document.documentElement.dataset.theme=t;$("th").textContent=t==="dark"?"☀️":"🌙";try{localStorage.setItem("tema",t)}catch(e){}}
 let t0=null;try{t0=localStorage.getItem("tema")}catch(e){}
 theme(t0||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"));
 $("th").onclick=()=>theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
