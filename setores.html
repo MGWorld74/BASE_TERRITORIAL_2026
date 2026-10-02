@@ -73,6 +73,7 @@ tbody tr.cnefe,tbody tr.cnefe:nth-child(even){background:#d9f2df;color:#14532d}
 tbody tr.pnad,tbody tr.pnad:nth-child(even){background:#dbe9fb;color:#1e3a8a}
 td select.pri,td select.apm{width:100%;min-width:100px;padding:4px 6px;background:transparent;color:inherit;border-color:currentColor}
 td.apmc{white-space:normal;min-width:210px}
+td.apmc .apmn{display:block;margin:2px 0}
 @media(hover:hover){td.apmc.has select.apm{display:none}td.apmc.has:hover select.apm,td.apmc.has:focus-within select.apm{display:inline-block}}
 td select.apm{width:auto;min-width:0;max-width:130px;padding:2px 4px;font-size:13px}
 .chip{display:flex;width:max-content;max-width:100%;align-items:center;gap:2px;border:1px solid currentColor;border-radius:12px;padding:1px 3px 1px 8px;margin:2px auto;font-size:13px;white-space:nowrap}
@@ -194,7 +195,7 @@ const apmArr=v=>String(v||"").split("\n").filter(Boolean);
 const apmList=()=>(APMS||[...new Set(data.flatMap(d=>apmArr(d.apm)))]).slice().sort((a,b)=>a.localeCompare(b,"pt-BR"));
 function apmAddOpts(sel){return'<option value="">+ APM</option>'+apmList().filter(x=>!sel.includes(x)).map(x=>`<option>${esc(x)}</option>`).join("")}
 function apmCell(d){const a=apmArr(d.apm);
- if(d.ok)return`<td class="apmc">${esc(a.join(", "))}</td>`;
+ if(d.ok)return`<td class="apmc">${a.map(n=>`<div class="apmn">${esc(n)}</div>`).join("")}</td>`;
  return`<td class="apmc${a.length?" has":""}">${a.map((n,i)=>`<span class="chip">${esc(n)}<button data-n="${i}" title="Remover ${esc(n)}" aria-label="Remover ${esc(n)}">✕</button></span>`).join("")}<select class="apm" aria-label="Adicionar APM">${apmAddOpts(a)}</select></td>`}
 const fillApmForm=()=>{$("sapm").innerHTML=apmList().map(n=>`<label><input type="checkbox" name="apm" value="${esc(n)}">${esc(n)}</label>`).join("")||'<span style="color:var(--mut);font-size:13px">Nenhum APM na lista</span>'};
 $("hr").innerHTML=H.map((h,i)=>K[i]==="pri"?'<th class="two">Prioridade<br>CNEFE / PNAD</th>':`<th>${h}</th>`).join("")+'<th class="act"></th>';
@@ -211,7 +212,7 @@ const emailLive=v=>String(v??"").replace(/\r/g,"").replace(/[ \t\u00a0,;]+/g,"\n
 function norm(k,v){v=String(v??"").replace(/\r/g,"");
  if(k==="tel"||k==="tel2")return telLines(v,true).filter(Boolean).join("\n");
  if(k==="email"){const m=v.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g);return(m||v.split(/[\n;,\s]+/).map(x=>x.trim()).filter(Boolean)).join("\n")}
- if(k==="apm")return[...new Set(v.split(/[\n;]+/).map(x=>x.trim()).filter(Boolean))].join("\n");
+ if(k==="apm")return[...new Set(v.split(/[\n;,]+/).map(x=>x.trim()).filter(Boolean))].join("\n");
  return v.trim()}
 const fix=o=>{K.forEach(k=>{if(o[k]==null)o[k]=k==="ok"?false:""});ML.concat("apm").forEach(k=>o[k]=norm(k,o[k]));return o};
 data.forEach(fix);
