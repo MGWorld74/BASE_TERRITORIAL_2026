@@ -201,8 +201,8 @@ $("hr").innerHTML=H.map((h,i)=>K[i]==="pri"?'<th class="two">Prioridade<br>CNEFE
 function fmtTel(l){if(!/^[\d\s().+-]+$/.test(l))return l;let n=l.replace(/\D/g,"");if((n.length===12||n.length===13)&&n.startsWith("55"))n=n.slice(2);
  return n.length===11?`(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`:n.length===10?`(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}`:l}
 function norm(k,v){v=String(v??"").replace(/\r/g,"");
- if(k==="tel"||k==="tel2")return v.split(/[\n;,\/]+/).map(x=>fmtTel(x.trim())).filter(Boolean).join("\n");
- if(k==="email")return v.split(/[\n;,\s]+/).map(x=>x.trim()).filter(Boolean).join("\n");
+ if(k==="tel"||k==="tel2")return v.split(/[\n;,\/|]+|\s+(?:e|ou)\s+|\s+(?=\()|\s+(?=\+55)/i).flatMap(x=>{x=x.trim();return x.replace(/\D/g,"").length>13&&/^[\d\s().+-]+$/.test(x)?(x.match(/\d{2}\s?9?\d{4}[-\s]?\d{4}/g)||[x]):[x]}).map(x=>fmtTel(x.trim())).filter(Boolean).join("\n");
+ if(k==="email"){const m=v.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g);return(m||v.split(/[\n;,\s]+/).map(x=>x.trim()).filter(Boolean)).join("\n")}
  if(k==="apm")return[...new Set(v.split(/[\n;]+/).map(x=>x.trim()).filter(Boolean))].join("\n");
  return v.trim()}
 const fix=o=>{K.forEach(k=>{if(o[k]==null)o[k]=k==="ok"?false:""});ML.concat("apm").forEach(k=>o[k]=norm(k,o[k]));return o};
