@@ -64,16 +64,15 @@ td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line);white-s
 td.ml{white-space:pre-wrap;min-width:150px}
 tbody tr{background:var(--card)}
 tbody tr:nth-child(even){background:var(--zebra)}
-tbody tr.done{background:var(--done)}
-tbody tr.done td:not(.chk):not(.act){color:color-mix(in srgb,var(--ink) 40%,transparent)}
+tbody tr.done{background:#e4e6ea}
+tbody tr.done td{color:#000}
 td[contenteditable]:focus{outline:2px solid var(--accent);background:var(--card);color:var(--ink)}
 .wrap :is(th,td):nth-child(-n+6){position:sticky;left:var(--l);width:var(--w);min-width:var(--w);max-width:var(--w)}
 .wrap td:nth-child(-n+6){z-index:1}.wrap th:nth-child(-n+6){z-index:3}
-.wrap :is(th,td):nth-child(1){--l:0px;--w:150px;z-index:2}.wrap th:nth-child(1){z-index:4}
-.wrap :is(th,td):nth-child(2){--l:150px;--w:60px}.wrap :is(th,td):nth-child(3){--l:210px;--w:60px}
-.wrap :is(th,td):nth-child(4){--l:270px;--w:60px}.wrap :is(th,td):nth-child(5){--l:330px;--w:130px}
-.wrap :is(th,td):nth-child(6){--l:460px;--w:80px;border-right:2px solid var(--line)}
-@media(max-width:700px){.wrap :is(th,td):nth-child(n+2):nth-child(-n+6){left:auto;width:auto;min-width:0;max-width:none}}
+.wrap :is(th,td):nth-child(1){--l:0px;--w:70px}.wrap :is(th,td):nth-child(2){--l:70px;--w:150px}
+.wrap :is(th,td):nth-child(3){--l:220px;--w:60px}.wrap :is(th,td):nth-child(4){--l:280px;--w:60px}
+.wrap :is(th,td):nth-child(5){--l:340px;--w:60px}.wrap :is(th,td):nth-child(6){--l:400px;--w:130px;border-right:2px solid var(--line)}
+@media(max-width:700px){.wrap :is(th,td):not(:nth-child(2)):nth-child(-n+6){left:auto;width:auto;min-width:0;max-width:none}.wrap :is(th,td):nth-child(2){--l:0px}.wrap td:nth-child(2){z-index:2}.wrap th:nth-child(2){z-index:4}}
 .chk input{width:18px;height:18px;padding:0}
 .act button{padding:2px 8px;color:var(--mut)}
 body.ro .act{display:none}
@@ -117,11 +116,9 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <label>EUV<input name="euv" type="number" value="0"></label><label>EDOC<input name="edoc" type="number" value="0"></label>
 <label>Tipo<input name="tipo" value="0"></label><label>APM<input name="apm" list="al"></label>
 <label>Telefone (um por linha)<textarea name="tel" rows="2"></textarea></label>
-<label>Tem whatsapp?<select name="w1"><option></option><option>Sim</option><option>Não</option><option>Não se aplica.</option></select></label>
-<label>Telefone 2 (um por linha)<textarea name="tel2" rows="2"></textarea></label>
-<label>Tem whatsapp? 2<select name="w2"><option></option><option>Sim</option><option>Não</option><option>Não se aplica.</option></select></label>
-<label class="full">E-mail (um por linha)<textarea name="email" rows="2"></textarea></label>
+<label>WhatsApp<select name="w1"><option></option><option>Sim</option><option>Não</option><option>Não se aplica.</option></select></label>
 <label class="full">Endereço<input name="end"></label>
+<label class="full">E-mail (um por linha)<textarea name="email" rows="2"></textarea></label>
 <label class="full">Observações<textarea name="obs" rows="2"></textarea></label>
 </div>
 <datalist id="bl"></datalist><datalist id="al"></datalist>
@@ -140,9 +137,9 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <input type="file" id="file" accept=".csv,text/csv" hidden>
 
 <script>
-const K=["setor","euv","edoc","tipo","bairro","ok","apm","tel","w1","tel2","w2","email","end","obs"];
-const H=["Setor","EUV","EDOC","Tipo","Bairro","Status","APM","Telefone","Tem whatsapp?","Telefone 2","Tem whatsapp? 2","E-mail","Endereço","Observações"];
-const ML=["tel","tel2","email","obs"];
+const K=["ok","setor","euv","edoc","tipo","bairro","end","tel","w1","email","obs","apm"];
+const H=["Status","Setor","EUV","EDOC","Tipo","Bairro","Endereço","Telefone","WhatsApp","E-mail","Observações","APM"];
+const ML=["tel","email","obs"];
 const mk=(s,e,d,b,ok,c)=>Object.assign({setor:s,euv:e,edoc:d,tipo:"0",bairro:b,ok:!!ok,tel:"",w1:"",tel2:"",w2:"",email:"",end:"",apm:"",obs:""},c||{});
 const ct={tel:"(21) 3495-0958",w1:"Sim",tel2:"Não se aplica.",w2:"Não se aplica.",email:"millenioilhapura.adm@gmail.com",end:"Av. Abraham Medina, 355"};
 const BO="Barra Olímpica";
@@ -155,6 +152,7 @@ const EDIT=!!SCRIPT_URL;
 let data=[];
 try{const s=localStorage.getItem("setores_v1");data=s?JSON.parse(s):seed}catch(e){data=seed}
 let local={};try{local=JSON.parse(localStorage.getItem("status_local")||"{}")}catch(e){}
+const hIdx=r0=>K.map((k,i)=>r0.findIndex(h=>{h=h.trim().toLowerCase();return h===H[i].toLowerCase()||(k==="w1"&&h==="tem whatsapp?")}));
 const $=id=>document.getElementById(id);
 const hora=()=>new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 let hold=0,pend=0,fail=0;const U=[];
@@ -174,8 +172,8 @@ async function load(){
   const r=await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}&_=${Date.now()}`,{cache:"no-store"});
   if(!r.ok)throw 0;
   const rows=parseCSV(await r.text()).filter(r=>r.some(x=>x.trim()));
-  const idx=K.map((k,i)=>rows[0].findIndex(h=>h.trim().toLowerCase()===H[i].toLowerCase()));
-  if(idx[0]<0)throw 0;
+  const idx=hIdx(rows[0]);
+  if(idx[K.indexOf("setor")]<0)throw 0;
   data=rows.slice(1).map(r=>{const o={};K.forEach((k,i)=>{const v=idx[i]>=0?(r[idx[i]]||"").trim():"";o[k]=k==="ok"?/^(sim|true|1|x)$/i.test(v):v});
    if(!EDIT&&o.setor in local)o.ok=local[o.setor];return fix(o)}).filter(o=>o.setor);
   save();bairros();render();
@@ -194,7 +192,7 @@ function bairros(){const u=k=>[...new Set(data.map(d=>d[k]).filter(Boolean))].so
 function render(){
  const q=$("q").value.toLowerCase(),fb=$("fb").value,fs=$("fs").value;
  const rows=data.map((d,i)=>[d,i]).filter(([d])=>(!q||K.some(k=>k!=="ok"&&String(d[k]).toLowerCase().includes(q)))&&(!fb||d.bairro===fb)&&(!fs||(fs==="d")===d.ok));
- $("tb").innerHTML=rows.map(([d,i])=>`<tr class="${d.ok?"done":""}" data-i="${i}">`+K.map(k=>k==="ok"?`<td class="chk"><input type="checkbox" ${d.ok?"checked":""} aria-label="Concluído"></td>`:`<td ${EDIT?'contenteditable="plaintext-only"':""} ${ML.includes(k)?'class="ml" title="Enter = nova linha · Ctrl+Enter = salvar"':""} data-k="${k}">${esc(d[k])}</td>`).join("")+`<td class="act"><button title="Excluir setor" aria-label="Excluir">✕</button></td></tr>`).join("");
+ $("tb").innerHTML=rows.map(([d,i])=>`<tr class="${d.ok?"done":""}" data-i="${i}">`+K.map(k=>k==="ok"?`<td class="chk"><input type="checkbox" ${d.ok?"checked":""} aria-label="Concluído"></td>`:`<td ${EDIT&&!d.ok?'contenteditable="plaintext-only"':""} ${ML.includes(k)?'class="ml" title="Enter = nova linha · Ctrl+Enter = salvar"':""} data-k="${k}">${esc(d[k])}</td>`).join("")+`<td class="act"><button title="Excluir setor" aria-label="Excluir" ${d.ok?"disabled":""}>✕</button></td></tr>`).join("");
  $("em").hidden=rows.length>0;
  const done=data.filter(d=>d.ok).length;
  $("st").textContent=`${data.length} setores · ${done} concluídos · ${data.length-done} pendentes`;
@@ -256,7 +254,7 @@ function parseCSV(t){const sep=(t.split("\n")[0].match(/;/g)||[]).length>=(t.spl
 $("imp").onclick=()=>$("file").click();
 $("file").onchange=async e=>{const f=e.target.files[0];if(!f)return;const rows=parseCSV((await f.text()).replace(/^\ufeff/,"")).filter(r=>r.some(x=>x.trim()));
  if(rows.length<2){alert("Arquivo sem dados.");return}
- const idx=K.map((k,i)=>rows[0].findIndex(h=>h.trim().toLowerCase()===H[i].toLowerCase()));
+ const idx=hIdx(rows[0]);
  let add=0,upd=0;rows.slice(1).forEach(r=>{const o={};K.forEach((k,i)=>{const v=idx[i]>=0?(r[idx[i]]||"").trim():"";o[k]=k==="ok"?/^(sim|true|1|x)$/i.test(v):v});
   if(!o.setor)return;fix(o);const ex=data.find(d=>d.setor===o.setor);
   if(ex){K.forEach((k,i)=>{if(idx[i]>=0)ex[k]=o[k]});upd++}else{data.push(o);add++}});

@@ -2,8 +2,9 @@
 // Planilha > Extensões > Apps Script > cole > Implantar > Nova implantação (ou "Gerenciar implantações" > editar > Nova versão).
 // App da Web | Executar como: Eu | Quem tem acesso: Qualquer pessoa. Copie a URL /exec para SCRIPT_URL no setores.html.
 const GID = 1534942531;
-const HEADERS = ["Setor","EUV","EDOC","Tipo","Bairro","Status","APM","Telefone","Tem whatsapp?","Telefone 2","Tem whatsapp? 2","E-mail","Endereço","Observações"];
-const KEYS    = ["setor","euv","edoc","tipo","bairro","ok","apm","tel","w1","tel2","w2","email","end","obs"];
+const HEADERS = ["Status","Setor","EUV","EDOC","Tipo","Bairro","Endereço","Telefone","WhatsApp","E-mail","Observações","APM"];
+const KEYS    = ["ok","setor","euv","edoc","tipo","bairro","end","tel","w1","email","obs","apm"];
+const ALT     = { w1: "tem whatsapp?" }; // título antigo: é renomeado para "WhatsApp"
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -16,6 +17,7 @@ function doPost(e) {
     const col = k => {
       const h = HEADERS[KEYS.indexOf(k)];
       let c = head.indexOf(h.toLowerCase()) + 1;
+      if (!c && ALT[k]) { c = head.indexOf(ALT[k]) + 1; if (c) { sh.getRange(1, c).setValue(h); head[c - 1] = h.toLowerCase(); } }
       if (!c) { c = head.length + 1; sh.getRange(1, c).setValue(h); head.push(h.toLowerCase()); }
       return c;
     };
