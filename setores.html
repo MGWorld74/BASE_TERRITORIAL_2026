@@ -55,13 +55,16 @@ h1{margin:0;font-size:24px}
 input,select,button,textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink)}
 button{cursor:pointer}button:disabled{opacity:.45;cursor:default}
 button.p{background:var(--accent);color:#fff;border-color:var(--accent)}
+button:not(:disabled):hover{filter:brightness(.93);border-color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.2)}
+button.p:not(:disabled):hover{filter:brightness(1.15)}
+button:not(:disabled):active{transform:translateY(1px)}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 #q{flex:1 1 220px;min-width:160px}
 .stats{margin-left:auto;color:var(--mut);font-size:14px}
 .wrap{margin:0 20px 40px;overflow:auto;max-height:calc(100vh - 170px);border:1px solid var(--line);border-radius:6px;background:var(--card)}
 table{border-collapse:collapse;width:100%;min-width:1700px}
-th{background:var(--head);color:var(--headink);padding:10px 8px;text-align:center;position:sticky;top:0;white-space:nowrap;z-index:2}
-td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap;background:inherit}
+th{background:var(--head);color:var(--headink);padding:10px 8px;text-align:center;position:sticky;top:0;white-space:nowrap;z-index:2;border-right:1px solid rgba(255,255,255,.25)}
+td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;background:inherit}
 td.ml{white-space:pre-wrap;min-width:150px}
 tbody tr{background:var(--card)}
 tbody tr:nth-child(even){background:var(--zebra)}
@@ -99,17 +102,16 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <input id="q" type="search" placeholder="Buscar setor, bairro, APM, e-mail, endereço…" aria-label="Buscar">
   <select id="fb" aria-label="Filtrar por bairro"><option value="">Todos os bairros</option></select>
   <select id="fs" aria-label="Filtrar por status"><option value="">Todos</option><option value="p">Pendentes</option><option value="d">Concluídos</option></select>
-  <button class="p" id="add">Adicionar setor</button>
-  <button id="un" disabled>↶ Desfazer</button>
-  <button id="rpt">Relatório</button>
-  <button id="imp">Importar CSV</button>
-  <button id="rf">Atualizar da planilha</button>
-  <button id="exp">Exportar CSV</button>
+  <button class="p" title="Incluir um novo setor na tabela e na planilha" id="add">Adicionar setor</button>
+  <button title="Desfazer a última alteração" id="un" disabled>↶ Desfazer</button>
+  <button title="Gerar relatório por coluna e critério" id="rpt">Relatório</button>
+  <button title="Reler os dados da planilha agora" id="rf">Atualizar da planilha</button>
+  <button title="Baixar todos os setores em arquivo CSV" id="exp">Exportar CSV</button>
   <span class="stats" id="st"></span>
 </div>
 <div class="wrap"><table>
 <thead><tr id="hr"></tr></thead>
-<tbody id="tb"></tbody></table><div class="empty" id="em" hidden>Nenhum setor encontrado. Use “Adicionar setor” ou “Importar CSV”.</div></div>
+<tbody id="tb"></tbody></table><div class="empty" id="em" hidden>Nenhum setor encontrado. Use “Adicionar setor” para incluir o primeiro.</div></div>
 
 <dialog id="dlg"><form method="dialog" id="fm">
 <div class="grid">
@@ -123,7 +125,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <label class="full">Observações<textarea name="obs" rows="2"></textarea></label>
 </div>
 <datalist id="bl"></datalist><datalist id="al"></datalist>
-<div class="row"><button type="button" id="cn">Cancelar</button><button class="p" type="submit">Salvar setor</button></div>
+<div class="row"><button type="button" title="Fechar sem salvar" id="cn">Cancelar</button><button class="p" type="submit" title="Salvar o novo setor">Salvar setor</button></div>
 </form></dialog>
 
 <dialog id="rd">
@@ -133,9 +135,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <label class="full">Valor<input id="rv" list="rl" placeholder="ex.: Concluído, Pendente, nome do APM, bairro…"></label>
 </div><datalist id="rl"></datalist>
 <div id="rr"></div>
-<div class="row noprint"><button id="rx">Exportar CSV</button><button id="rp" class="p">Imprimir / PDF</button><button id="rk">Fechar</button></div>
+<div class="row noprint"><button title="Baixar o relatório em CSV" id="rx">Exportar CSV</button><button title="Imprimir ou salvar o relatório em PDF" id="rp" class="p">Imprimir / PDF</button><button title="Fechar o relatório" id="rk">Fechar</button></div>
 </dialog>
-<input type="file" id="file" accept=".csv,text/csv" hidden>
 
 <script>
 const K=["ok","setor","euv","edoc","tipo","bairro","end","tel","w1","email","obs","apm"];
@@ -253,15 +254,7 @@ function parseCSV(t){const sep=(t.split("\n")[0].match(/;/g)||[]).length>=(t.spl
   if(q){if(ch==='"'&&t[i+1]==='"'){c+='"';i++}else if(ch==='"')q=false;else c+=ch}
   else if(ch==='"')q=true;else if(ch===sep){r.push(c);c=""}else if(ch==="\n"){r.push(c);out.push(r);r=[];c=""}else if(ch!=="\r")c+=ch}
  if(c||r.length){r.push(c);out.push(r)}return out}
-$("imp").onclick=()=>$("file").click();
-$("file").onchange=async e=>{const f=e.target.files[0];if(!f)return;const rows=parseCSV((await f.text()).replace(/^\ufeff/,"")).filter(r=>r.some(x=>x.trim()));
- if(rows.length<2){alert("Arquivo sem dados.");return}
- const idx=hIdx(rows[0]);
- let add=0,upd=0;rows.slice(1).forEach(r=>{const o={};K.forEach((k,i)=>{const v=idx[i]>=0?(r[idx[i]]||"").trim():"";o[k]=k==="ok"?/^(sim|true|1|x)$/i.test(v):v});
-  if(!o.setor)return;fix(o);const ex=data.find(d=>d.setor===o.setor);
-  if(ex){K.forEach((k,i)=>{if(idx[i]>=0)ex[k]=o[k]});upd++}else{data.push(o);add++}});
- save();bairros();render();alert(`${add} setores adicionados, ${upd} atualizados.`);e.target.value=""};
-if(!EDIT){$("add").hidden=$("imp").hidden=true;document.body.classList.add("ro");sv("Modo leitura: configure SCRIPT_URL para salvar na planilha.")}
+if(!EDIT){$("add").hidden=true;document.body.classList.add("ro");sv("Modo leitura: configure SCRIPT_URL para salvar na planilha.")}
 $("rf").onclick=load;upd();load();
 setInterval(()=>{if(!document.hidden&&Date.now()>hold&&!document.activeElement.isContentEditable)load()},10000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()>hold)load()});
