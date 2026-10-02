@@ -134,10 +134,10 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <label>Setor<input name="setor" required></label><label>Bairro<input name="bairro" list="bl"></label>
 <label>EUV<input name="euv" type="number" value="0"></label><label>EDOC<input name="edoc" type="number" value="0"></label>
 <label>Tipo<input name="tipo" value="0"></label><div class="apmf"><span>APM (um ou mais)</span><div class="chks" id="sapm"></div></div>
-<label>Telefone (um por linha)<textarea name="tel" rows="2"></textarea></label>
+<label>Telefone (um por linha)<textarea name="tel" rows="2" inputmode="tel" placeholder="Somente números"></textarea></label>
 <label>WhatsApp<select name="w1"><option></option><option>Sim</option><option>Não</option><option>Não se aplica.</option></select></label>
 <label class="full">Endereço<input name="end"></label>
-<label class="full">E-mail (um por linha)<textarea name="email" rows="2"></textarea></label>
+<label class="full">E-mail (um por linha)<textarea name="email" rows="2" inputmode="email" autocapitalize="off" spellcheck="false"></textarea></label>
 <label class="full">Observações<textarea name="obs" rows="2"></textarea></label>
 </div>
 <datalist id="bl"></datalist>
@@ -200,8 +200,16 @@ const fillApmForm=()=>{$("sapm").innerHTML=apmList().map(n=>`<label><input type=
 $("hr").innerHTML=H.map((h,i)=>K[i]==="pri"?'<th class="two">Prioridade<br>CNEFE / PNAD</th>':`<th>${h}</th>`).join("")+'<th class="act"></th>';
 function fmtTel(l){if(!/^[\d\s().+-]+$/.test(l))return l;let n=l.replace(/\D/g,"");if((n.length===12||n.length===13)&&n.startsWith("55"))n=n.slice(2);
  return n.length===11?`(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`:n.length===10?`(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}`:l}
+const TSEP=/[;,\/|]+|\s+(?:e|ou)\s+/i;
+const fmtPart=d=>{if(!d)return"";const a="("+d.slice(0,2);if(d.length<=2)return a;const r=d.slice(2),s=r[0]==="9"?5:4;return a+") "+r.slice(0,s)+(r.length>s?"-"+r.slice(s):"")};
+function telLines(v,fin){return String(v??"").replace(/\r/g,"").split("\n").flatMap(line=>line.split(TSEP).flatMap(seg=>{seg=seg||"";
+ let d=seg.replace(/\D/g,"");if(/^\s*\+/.test(seg)&&d.startsWith("55")&&d.length>2)d=d.slice(2);
+ if(fin&&d.length>=8&&d.length<=9)return[d.slice(0,-4)+"-"+d.slice(-4)];
+ const o=[];while(d){const L=d.length>=3?(d[2]==="9"?11:10):99;o.push(fmtPart(d.slice(0,L)));d=d.slice(L)}
+ return o.length?o:[""]}))}
+const emailLive=v=>String(v??"").replace(/\r/g,"").replace(/[ \t\u00a0,;]+/g,"\n").replace(/\n{2,}/g,"\n").replace(/^\n/,"");
 function norm(k,v){v=String(v??"").replace(/\r/g,"");
- if(k==="tel"||k==="tel2")return v.split(/[\n;,\/|]+|\s+(?:e|ou)\s+|\s+(?=\()|\s+(?=\+55)/i).flatMap(x=>{x=x.trim();return x.replace(/\D/g,"").length>13&&/^[\d\s().+-]+$/.test(x)?(x.match(/\d{2}\s?9?\d{4}[-\s]?\d{4}/g)||[x]):[x]}).map(x=>fmtTel(x.trim())).filter(Boolean).join("\n");
+ if(k==="tel"||k==="tel2")return telLines(v,true).filter(Boolean).join("\n");
  if(k==="email"){const m=v.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g);return(m||v.split(/[\n;,\s]+/).map(x=>x.trim()).filter(Boolean)).join("\n")}
  if(k==="apm")return[...new Set(v.split(/[\n;]+/).map(x=>x.trim()).filter(Boolean))].join("\n");
  return v.trim()}
@@ -257,6 +265,29 @@ $("tb").addEventListener("keydown",e=>{const k=e.target.dataset&&e.target.datase
 $("tb").addEventListener("click",e=>{const b=e.target.closest(".act button");if(!b)return;const i=+b.closest("tr").dataset.i;
  if(confirm("Excluir o setor "+data[i].setor+"?")){push("del",data[i]);data.splice(i,1);save();bairros();render()}});
 ["fb","fs"].forEach(id=>$(id).addEventListener("input",render));
+// ===== Telefone e e-mail: só caracteres válidos, um embaixo do outro, automático =====
+const telEmail=el=>el&&el.matches?(el.matches("td[data-k=tel],td[data-k=email]")?el.dataset.k:el.matches("#fm textarea[name=tel],#fm textarea[name=email]")?el.name:null):null;
+document.addEventListener("beforeinput",e=>{const k=telEmail(e.target),ch=e.data;if(!k||e.inputType!=="insertText"||!ch||ch.length!==1)return;
+ let out;
+ if(k==="tel"){if(/\d/.test(ch))return;out=/[;,\/|]/.test(ch)?"\n":""}
+ else{if(!/[ \t,;]/.test(ch))return;out="\n"}
+ e.preventDefault();
+ if(out&&!document.execCommand("insertText",false,out)&&e.target.setRangeText){const t=e.target;t.setRangeText(out,t.selectionStart,t.selectionEnd,"end");t.dispatchEvent(new Event("input",{bubbles:true}))}});
+function liveFix(el){const ta=el.tagName==="TEXTAREA",k=ta?el.name:el.dataset.k;let raw,pos;
+ if(ta){raw=el.value;pos=el.selectionStart}
+ else{raw=el.innerText;const sl=getSelection();if(!sl.rangeCount||!el.contains(sl.anchorNode))return;
+  const r=sl.getRangeAt(0).cloneRange();r.selectNodeContents(el);r.setEnd(sl.anchorNode,sl.anchorOffset);pos=r.toString().length}
+ const nw=k==="tel"?telLines(raw,false).join("\n"):emailLive(raw);if(nw===raw)return;
+ const sig=k==="tel"?/\d/:/[^\s,;]/,brk=k==="tel"?/[\n;,\/|]/:/[\s,;]/,before=raw.slice(0,pos);
+ let n=0,last=-1;for(let i=0;i<before.length;i++)if(sig.test(before[i])){n++;last=i}
+ let np=0,c=0;
+ if(pos>=raw.length)np=nw.length;
+ else{if(n>0)for(;np<nw.length&&c<n;np++)if(sig.test(nw[np]))c++;
+  if(brk.test(before.slice(last+1))&&nw[np]==="\n")np++}
+ if(ta){el.value=nw;el.setSelectionRange(np,np)}
+ else{el.textContent=nw;const t=el.firstChild;if(t){const r=document.createRange();r.setStart(t,Math.min(np,t.length));r.collapse(true);const sl=getSelection();sl.removeAllRanges();sl.addRange(r)}}}
+$("tb").addEventListener("input",e=>{if(e.isComposing)return;const t=e.target.closest&&e.target.closest("td[data-k=tel],td[data-k=email]");if(t&&t.isContentEditable)liveFix(t)});
+$("fm").addEventListener("input",e=>{if(e.isComposing)return;if(telEmail(e.target))liveFix(e.target)});
 // ===== APMs (lista de nomes) =====
 function listaApms(){const l=apmList();$("lap").innerHTML=l.length?l.map((n,i)=>`<li style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--line)"><span>${esc(n)}</span><button data-i="${i}" title="Excluir da lista" aria-label="Excluir ${esc(n)}">✕</button></li>`).join(""):'<li class="empty" style="padding:14px">Nenhum APM na lista.</li>'}
 function setApms(a){APMS=a;try{localStorage.setItem("apms_lista",JSON.stringify(a))}catch(e){}listaApms();fillApmForm();render()}
