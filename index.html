@@ -3,37 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style id="guarda-css">html{visibility:hidden}</style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-(async function () {
-  const css = document.getElementById('guarda-css');
-
-  // Só exige login quando está no GitHub Pages
-  if (!location.hostname.endsWith('github.io')) { css.remove(); return; }
-
-  const db = supabase.createClient(
-    'https://jvjfpxrknggeodjgamyu.supabase.co',
-    'sb_publishable_yxHF_N1gjdGoHMEoM5GF2w_QVMzzMF0'
-  );
-
-  const { data: { session } } = await db.auth.getSession();
-  if (!session) { location.replace('index.html'); return; }
-
-  const { data: perfil } = await db.from('perfis')
-    .select('aprovado').eq('id', session.user.id).single();
-  if (!perfil || !perfil.aprovado) {
-    await db.auth.signOut();
-    location.replace('index.html');
-    return;
-  }
-
-  css.remove();
-})();
-</script>
-    <title>Acesso ao Sistema - Base Territorial</title>
-    <!-- SDK Oficial do Supabase -->
+    <style id="guarda-css">html{visibility:hidden}</style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+    (async function () {
+      // Exibe a página de login sem tentar redirecionar para ela mesma
+      const css = document.getElementById('guarda-css');
+      if (css) css.remove();
+    })();
+    </script>
+    <title>Acesso ao Sistema - Base Territorial</title>
     <style>
         * {
             box-sizing: border-box;
@@ -177,7 +156,7 @@
     // CONFIGURAÇÃO DO SUPABASE (BASE_TERRITORIAL_2026)
     // =========================================================================
     const SUPABASE_URL = 'https://rdxklpkukmuwwetftqde.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_sklR4egsYWIHZ3UMdWLyWQ_NHOVkD16'; // Cole a sua chave anon public aqui
+    const SUPABASE_ANON_KEY = 'sb_publishable_sklR4egsYWIHZ3UMdWLyWQ_NHOVkD16'; 
 
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -203,7 +182,7 @@
         return data ? data.aprovado === true : false;
     }
 
-    // Se o utilizador já estiver logado e aprovado, vai direto para setores.html
+    // Se o utilizador já estiver logado e aprovado, encaminha para setores.html
     (async function verificarSessaoExistente() {
         const { data: { session } } = await _supabase.auth.getSession();
         if (session && (await contaAprovada(session.user.id)) === true) {
@@ -256,7 +235,6 @@
             const aprovada = await contaAprovada(data.user.id);
 
             if (aprovada === true) {
-                // Redireciona para setores.html
                 window.location.href = 'setores.html';
                 return;
             }
