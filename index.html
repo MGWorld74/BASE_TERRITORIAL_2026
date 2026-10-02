@@ -130,9 +130,9 @@
         @media (max-width: 768px) {
             body::before {
                 height: 100lvh;
-                /* contain = imagem inteira visível, sem ampliar além da tela.
-                   Se preferir preencher tudo cortando as bordas, troque por: cover */
-                background-size: contain;
+                /* cover = preenche a tela toda, cortando um pouco das bordas */
+                background-size: cover;
+                background-position: center center;
             }
         }
 
