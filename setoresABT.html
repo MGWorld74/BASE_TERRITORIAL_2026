@@ -237,10 +237,10 @@ async function load(){
   $("sync").textContent="Planilha lida às "+hora();
  }catch(e){bairros();render();$("sync").textContent="Não foi possível ler a planilha (mostrando os dados salvos). Ela precisa estar compartilhada como “Qualquer pessoa com o link”."}
 }
-function push(op,d,k,ant){if(!EDIT)return;if(!pend)fail=0;hold=Date.now()+8000;pend++;sv("Salvando…");
+let errMsg="";function push(op,d,k,ant){if(!EDIT)return;if(!pend)fail=0;hold=Date.now()+8000;pend++;sv("Salvando…");
  fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({op,gid:GID,setor:d.setor,ant:ant||d.setor,k,v:k?d[k]:null,row:d})})
- .then(r=>r.text()).then(t=>{if(t.trim()!=="ok")throw 0}).catch(()=>{fail++}).finally(()=>{pend--;if(pend)return;
-  if(fail)sv("⚠ Erro ao salvar ("+fail+"). Verifique a conexão e o Apps Script.","#c0392b");else{sv("✓ Salvo às "+hora(),"#1e8e3e");setTimeout(load,3000)}})}
+ .then(r=>r.text()).then(t=>{if(t.trim()!=="ok"){errMsg=t.trim().slice(0,160);throw 0}}).catch(e=>{fail++;if(e)errMsg="Falha de rede/acesso: "+e}).finally(()=>{pend--;if(pend)return;
+  if(fail)sv("⚠ Erro ao salvar ("+fail+"): "+(errMsg||"sem resposta")+"","#c0392b");else{sv("✓ Salvo às "+hora(),"#1e8e3e");setTimeout(load,3000)}})}
 function save(){try{localStorage.setItem("setores_abt_v1",JSON.stringify(data))}catch(e){}}
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 // Largura da coluna Bairro = maior nome de bairro (medido em todos os dados, não só nos filtrados)
