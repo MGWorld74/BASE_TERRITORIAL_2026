@@ -122,6 +122,27 @@
             text-align: center;
             display: none;
         }
+        .aviso-cadastro {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f1f6fc;
+            border-left: 3px solid #007bff;
+            border-radius: 4px;
+            color: #444;
+            font-size: 13px;
+            line-height: 1.4;
+            text-align: center;
+        }
+        .aviso-cadastro a {
+            color: #007bff;
+            font-weight: bold;
+            text-decoration: none;
+            word-break: break-all;
+        }
+        .aviso-cadastro a:hover {
+            text-decoration: underline;
+        }
         .msg-erro { color: #d9534f; }
         .msg-sucesso { color: #28a745; }
         .msg-aviso { color: #b7791f; }
@@ -156,6 +177,10 @@
             <button type="submit" id="btn-login" class="btn-submit">Entrar</button>
             <div id="msg-login" class="msg"></div>
         </form>
+        <div id="aviso-cadastro" class="aviso-cadastro">
+            Solicite o seu cadastro pelo e-mail
+            <a href="mailto:maury.goncalves@ibge.gov.br?subject=Solicitação de cadastro - Base Territorial">maury.goncalves@ibge.gov.br</a>.
+        </div>
     </div>
 
     <!-- ESCOLHA DA PÁGINA APÓS O LOGIN -->
@@ -186,6 +211,7 @@
     function mostrarSessao(idSessao) {
         document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.msg').forEach(el => el.style.display = 'none');
+        document.getElementById('aviso-cadastro').style.display = 'none';
         document.getElementById(idSessao).classList.add('active');
     }
 
@@ -221,6 +247,8 @@
         const btn = document.getElementById('btn-login');
 
         msg.style.display = 'none';
+        const avisoCadastro = document.getElementById('aviso-cadastro');
+        avisoCadastro.style.display = 'none';
 
         // Só aceita e-mail do domínio do IBGE
         if (!email.endsWith(DOMINIO_PERMITIDO)) {
@@ -235,6 +263,7 @@
 
         if (error) {
             mostrarMsg(msg, 'erro', 'E-mail ou senha (SIAPE) incorretos.');
+            avisoCadastro.style.display = 'block';
         } else {
             const aprovada = await contaAprovada(data.user.id);
 
@@ -250,6 +279,7 @@
             await _supabase.auth.signOut();
             if (aprovada === false) {
                 mostrarMsg(msg, 'aviso', 'Seu acesso ainda não foi liberado pelo administrador.');
+                avisoCadastro.style.display = 'block';
             } else {
                 mostrarMsg(msg, 'erro', 'Não foi possível verificar a sua conta. Tente novamente.');
             }
