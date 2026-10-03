@@ -50,6 +50,10 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 Georgia,"Times New Roman",serif}
 header{padding:20px 20px 8px;text-align:center}
 #th{position:absolute;top:16px;right:20px;width:40px;height:40px;padding:0;font-size:20px;line-height:1;border-radius:50%}
+#vb{position:absolute;top:16px;left:20px;height:40px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--line);border-radius:20px;background:var(--card);color:var(--ink);text-decoration:none;font-size:15px;line-height:1;cursor:pointer}
+#vb:hover{border-color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.2);filter:brightness(.93)}
+#vb:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+@media(max-width:560px){#vb{width:40px;padding:0;justify-content:center;font-size:20px}#vb .vt{display:none}}
 h1{margin:0;font-size:24px}
 .sub{color:var(--mut);font-size:14px;margin-top:2px}
 .bar{display:flex;flex-wrap:wrap;gap:8px;padding:8px 20px 14px;align-items:center}
@@ -111,6 +115,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </head>
 <body>
 <header>
+  <a id="vb" href="index.html" title="Voltar" aria-label="Voltar"><span>←</span><span class="vt">&nbsp;Voltar</span></a>
   <button id="th" aria-label="Alternar claro/escuro" title="Alternar claro/escuro">🌙</button>
   <h1>Setores Ordenados - ABT</h1>
   <div class="sub"><span id="sync">Conectando à planilha…</span> · <b id="sv"></b></div>
