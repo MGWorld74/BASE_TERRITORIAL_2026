@@ -49,7 +49,15 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 Georgia,"Times New Roman",serif}
 header{padding:20px 20px 8px;text-align:center}
-#bvolta{position:absolute;top:16px;left:20px;height:40px;padding:0 14px}
+#topl{position:absolute;top:16px;left:20px;display:flex;gap:8px}#topl button{height:40px;padding:0 14px}
+#pd{width:min(1100px,96vw)}
+#pt .wrap2{max-height:35vh}#pt table{min-width:0;width:100%;font-size:12px}
+#pt th,#pt td{border:1px solid #999;padding:4px 6px;white-space:pre-wrap;text-align:center}
+#pt th{position:static;background:#1c4587;color:#fff}
+#pt tbody tr,#pt tbody tr:nth-child(even){background:#fff;color:#000}
+#pt tbody tr.r-c{background:#d9f2df;color:#14532d}#pt tbody tr.r-p{background:#dbe9fb;color:#1e3a8a}#pt tbody tr.r-d{background:#e5e7eb;color:#4b5563}
+#pt td.l{text-align:left}#pt tr{break-inside:avoid}#pt thead{display:table-header-group}
+#pt *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @media(max-width:600px){header{padding-top:64px}}
 #th{position:absolute;top:16px;right:20px;width:40px;height:40px;padding:0;font-size:20px;line-height:1;border-radius:50%}
 h1{margin:0;font-size:24px}
@@ -109,12 +117,12 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .grid .full{grid-column:1/-1}
 .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 @media(max-width:560px){.grid{grid-template-columns:1fr}}
-@media print{@page{size:landscape;margin:10mm}body.pr>*:not(#rd){display:none!important}body.pr #rd{position:static;width:auto;max-height:none;overflow:visible;border:0;color:#000;background:#fff}body.pr .wrap2{max-height:none;overflow:visible}.noprint{display:none!important}}
+@media print{@page{size:landscape;margin:10mm}body.pr>*:not(#rd){display:none!important}body.pr #rd{position:static;width:auto;max-height:none;overflow:visible;border:0;color:#000;background:#fff}body.pr .wrap2{max-height:none;overflow:visible}.noprint{display:none!important}body.pp>*:not(#pd){display:none!important}body.pp #pd{position:static;width:auto;max-height:none;overflow:visible;border:0;margin:0;color:#000;background:#fff}body.pp .wrap2{max-height:none;overflow:visible}#pt table{font-size:10px}}
 </style>
 </head>
 <body>
 <header>
-  <button title="Voltar para a página inicial" id="bvolta" onclick="location.href='index.html'">← Voltar</button>
+  <div id="topl"><button title="Voltar para a página inicial" id="bvolta" onclick="location.href='index.html'">← Voltar</button><button title="Imprimir ou salvar em PDF os setores escolhidos" id="bimp">🖨 Imprimir</button></div>
   <button id="th" aria-label="Alternar claro/escuro" title="Alternar claro/escuro">🌙</button>
   <h1>Setores Ordenados - AJA</h1>
   <div class="sub"><span id="sync">Conectando à planilha…</span> · <b id="sv"></b></div>
@@ -175,6 +183,21 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </div><datalist id="rl"></datalist>
 <div id="rr"></div>
 <div class="row noprint"><button title="Baixar o relatório em CSV" id="rx">Exportar CSV</button><button title="Imprimir ou salvar o relatório em PDF" id="rp" class="p">Imprimir / PDF</button><button title="Fechar o relatório" id="rk">Fechar</button></div>
+</dialog>
+
+<dialog id="pd">
+<div class="noprint">
+<div class="grid">
+<div class="apmf"><span>O que imprimir</span><div class="chks" id="pesc" style="max-height:none;flex-direction:column;flex-wrap:nowrap">
+<label><input type="radio" name="pesc" value="t" checked> O que está na tela agora (respeita filtros e pesquisa)</label>
+<label><input type="radio" name="pesc" value="a"> Todos os setores</label>
+<label><input type="radio" name="pesc" value="p"> Somente pendentes</label>
+<label><input type="radio" name="pesc" value="d"> Somente concluídos</label>
+</div></div>
+<div class="apmf"><span>Colunas</span><div class="chks" id="pcl" style="max-height:none"></div></div>
+</div></div>
+<div id="pt"></div>
+<div class="row noprint"><button title="Fechar sem imprimir" id="pk">Fechar</button><button title="Imprimir ou salvar em PDF" id="prp" class="p">Imprimir / PDF</button></div>
 </dialog>
 
 <script>
@@ -355,6 +378,25 @@ $("rk").onclick=()=>$("rd").close();
 $("rx").onclick=()=>dl("relatorio.csv",[H].concat(rep.map(d=>K.map(k=>disp(d,k)))));
 $("rp").onclick=()=>{document.body.classList.add("pr");print()};
 addEventListener("afterprint",()=>document.body.classList.remove("pr"));
+// ===== Imprimir =====
+const PCOLS=["setor","euv","edoc","tipo","bairro","pri","end","tel","obs","apm"];
+$("pcl").innerHTML=K.map((k,i)=>`<label><input type="checkbox" value="${k}"${PCOLS.includes(k)?" checked":""}> ${H[i]}</label>`).join("");
+function prRows(m){const fb=$("fb").value,fs=$("fs").value,fp=$("fp").value;
+ return data.filter(d=>m==="a"?true:m==="p"?!d.ok:m==="d"?d.ok:(!fsetor||d.setor===fsetor||(fsetor.length===4&&d.setor.endsWith(fsetor)))&&(!fb||d.bairro===fb)&&(!fs||(fs==="d")===d.ok)&&(!fp||(fp==="-"?!d.pri:d.pri===fp)))}
+function prDesc(m){if(m!=="t")return{a:"Todos os setores",p:"Setores pendentes",d:"Setores concluídos"}[m];
+ const p=[];if(fsetor)p.push("setor "+fsetor);if($("fb").value)p.push($("fb").value);if($("fs").value)p.push($("fs").selectedOptions[0].text);if($("fp").value)p.push($("fp").selectedOptions[0].text);
+ return p.length?"Filtros: "+p.join(" · "):"Todos os setores (sem filtros)"}
+function prRender(){const m=document.querySelector("input[name=pesc]:checked").value,cols=[...document.querySelectorAll("#pcl input:checked")].map(x=>x.value),rows=prRows(m);
+ const s=f=>rows.reduce((a,d)=>a+(parseFloat(d[f])||0),0);
+ $("prp").disabled=!cols.length||!rows.length;
+ if(!cols.length){$("pt").innerHTML='<p class="empty">Marque ao menos uma coluna.</p>';return}
+ if(!rows.length){$("pt").innerHTML='<p class="empty">Nenhum setor para imprimir com essa seleção.</p>';return}
+ $("pt").innerHTML=`<h3>${esc(document.querySelector("h1").textContent)}</h3><p>${esc(prDesc(m))} · ${rows.length} de ${data.length} setores · EUV ${s("euv")} · EDOC ${s("edoc")} · emitido em ${new Date().toLocaleString("pt-BR")}</p><div class="wrap2"><table><thead><tr>${cols.map(k=>`<th>${H[K.indexOf(k)]}</th>`).join("")}</tr></thead><tbody>${rows.map(d=>`<tr class="${d.ok?"r-d":d.pri==="CNEFE"?"r-c":d.pri==="PNAD"?"r-p":""}">`+cols.map(k=>`<td class="ml${k==="obs"?" l":""}">${esc(disp(d,k))}</td>`).join("")+"</tr>").join("")}</tbody></table></div>`}
+$("pd").addEventListener("input",prRender);
+$("bimp").onclick=()=>{prRender();$("pd").showModal()};
+$("pk").onclick=()=>$("pd").close();
+$("prp").onclick=()=>{document.body.classList.add("pp");print()};
+addEventListener("afterprint",()=>document.body.classList.remove("pp"));
 function parseCSV(t){const sep=(t.split("\n")[0].match(/;/g)||[]).length>=(t.split("\n")[0].match(/,/g)||[]).length?";":",";
  const out=[];let r=[],c="",q=false;for(let i=0;i<t.length;i++){const ch=t[i];
   if(q){if(ch==='"'&&t[i+1]==='"'){c+='"';i++}else if(ch==='"')q=false;else c+=ch}
