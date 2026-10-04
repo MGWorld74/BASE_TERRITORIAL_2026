@@ -95,7 +95,7 @@ td[contenteditable]:focus{outline:2px solid var(--accent);background:var(--card)
 .wrap td:nth-child(-n+6){z-index:1}.wrap th:nth-child(-n+6){z-index:3}
 .wrap :is(th,td):nth-child(1){--l:0px;--w:70px}.wrap :is(th,td):nth-child(2){--l:70px;--w:150px}
 .wrap :is(th,td):nth-child(3){--l:220px;--w:60px}.wrap :is(th,td):nth-child(4){--l:280px;--w:60px}
-.wrap :is(th,td):nth-child(5){--l:340px;--w:60px}.wrap :is(th,td):nth-child(6){--l:400px;--w:130px;border-right:2px solid var(--line)}
+.wrap :is(th,td):nth-child(5){--l:340px;--w:60px}.wrap :is(th,td):nth-child(6){--l:400px;--w:var(--wb,130px);border-right:2px solid var(--line)}
 @media(max-width:700px){.wrap :is(th,td):not(:nth-child(2)):nth-child(-n+6){left:auto;width:auto;min-width:0;max-width:none}.wrap :is(th,td):nth-child(2){--l:0px}.wrap td:nth-child(2){z-index:2}.wrap th:nth-child(2){z-index:4}}
 .chk input{width:18px;height:18px;padding:0}
 .act button{padding:2px 8px;color:var(--mut)}
@@ -247,7 +247,9 @@ function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt
 function bairros(){const u=k=>[...new Set(data.map(d=>d[k]).filter(Boolean))].sort(),b=u("bairro"),cur=$("fb").value;
  $("fb").innerHTML='<option value="">Todos os bairros</option>'+b.map(x=>`<option${x===cur?" selected":""}>${esc(x)}</option>`).join("");
  $("bl").innerHTML=b.map(x=>`<option value="${esc(x)}">`).join("")}
+function ajustaBairro(){try{const c=ajustaBairro.c||(ajustaBairro.c=document.createElement("canvas").getContext("2d"));c.font="bold 15px Georgia,'Times New Roman',serif";let w=c.measureText("Bairro").width;data.forEach(d=>{if(d.bairro)w=Math.max(w,c.measureText(d.bairro).width)});document.querySelector(".wrap").style.setProperty("--wb",Math.ceil(w+28)+"px")}catch(e){}}
 function render(){
+ ajustaBairro();
  const fb=$("fb").value,fs=$("fs").value,fp=$("fp").value;
  const rows=data.map((d,i)=>[d,i]).filter(([d])=>(!fsetor||d.setor===fsetor||(fsetor.length===4&&d.setor.endsWith(fsetor)))&&(!fb||d.bairro===fb)&&(!fs||(fs==="d")===d.ok)&&(!fp||(fp==="-"?!d.pri:d.pri===fp)));
  $("tb").innerHTML=rows.map(([d,i])=>`<tr class="${d.ok?"done":d.pri==="CNEFE"?"cnefe":d.pri==="PNAD"?"pnad":""}" data-i="${i}">`+K.map(k=>k==="ok"?`<td class="chk"><input type="checkbox" ${d.ok?"checked":""} aria-label="Concluído"></td>`:k==="pri"?`<td><select class="pri" aria-label="Prioridade CNEFE / PNAD" ${d.ok?"disabled":""}><option value="">—</option><option${d.pri==="CNEFE"?" selected":""}>CNEFE</option><option${d.pri==="PNAD"?" selected":""}>PNAD</option></select></td>`:k==="apm"?apmCell(d):`<td ${EDIT&&!d.ok?'contenteditable="plaintext-only"':""} ${ML.includes(k)?'class="ml" title="Enter = nova linha · Ctrl+Enter = salvar"':""} data-k="${k}">${esc(d[k])}</td>`).join("")+`<td class="act"><button title="Excluir setor" aria-label="Excluir" ${d.ok?"disabled":""}>✕</button></td></tr>`).join("");
