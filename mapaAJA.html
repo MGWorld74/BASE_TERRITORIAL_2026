@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapa de Setores - ABT</title>
+  <title>Mapa de Setores - AJA</title>
 
   <!-- Proteção de acesso: exige login feito no index.html -->
   <style>html { visibility: hidden; }</style>
@@ -69,15 +69,15 @@
 
   <script>
     // ===== CONFIGURAÇÃO =====
-    // Mesma planilha usada no setoresABT.html (coluna "Status" = caixinha de concluído)
-    const SHEET_ID = "1DySyEYxXPOS9b_dq9rg5llojf4EAiGvqKL4GSzIibs8";
-    const GID = "1741145519";
-    const COR_CONCLUIDO = "#5A7A2E";   // verde musgo
-    const OPACIDADE_CONCLUIDO = 0.45;  // transparência (0 = invisível, 1 = sólido)
-    const ARQUIVO_KMZ = "ABT.kmz";
+    // Mesma planilha usada no setoresAJA.html (coluna "Status" = caixinha de concluído)
+    const SHEET_ID = "1Bu5hq9aRMeWh-4bk9-34QZ0InyrtitQEved6-iEQ7Dc";
+    const GID = "1534942531";
+    const COR_CONCLUIDO = "#000080";   // azul marinho
+    const OPACIDADE_CONCLUIDO = 0.65;  // 65% (0 = invisível, 1 = sólido)
+    const ARQUIVO_KMZ = "AJA.kmz";
 
     const $ = id => document.getElementById(id);
-    const map = L.map('map', { preferCanvas: true }).setView([-22.99, -43.35], 12);
+    const map = L.map('map', { preferCanvas: true }).setView([-22.93, -43.36], 12);
     const canvas = L.canvas({ padding: 0.5 });
 
     // Mapas de fundo
@@ -211,6 +211,10 @@
     }
 
     async function atualizarStatus() {
+      if (SHEET_ID.startsWith('COLE_') || GID.startsWith('COLE_')) {
+        console.warn('mapaAJA: configure SHEET_ID e GID da planilha do AJA.');
+        return;
+      }
       try {
         const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}&_=${Date.now()}`;
         const r = await fetch(url, { cache: 'no-store' });
