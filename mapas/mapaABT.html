@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa de Setores - ABT.kmz</title>
+  
+  <!-- CSS do Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      font-family: Arial, sans-serif;
+    }
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
+    .setor-tooltip {
+      background-color: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-weight: bold;
+      font-size: 13px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .setor-tooltip::before {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+
+  <!-- Bibliotecas JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- Plugin Leaflet KML -->
+  <script src="https://cdn.jsdelivr.net/gh/windycom/leaflet-kml@master/L.KML.js"></script>
+
+  <script>
+    // 1. Inicializa o mapa centralizado no Brasil
+    const map = L.map('map').setView([-14.235, -51.925], 4);
+
+    // 2. Adiciona o mapa base (OpenStreetMap)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // 3. Função para carregar e processar o ficheiro KMZ
+    async function carregarKMZ(url) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Erro ao descarregar o ficheiro KMZ. Verifique o caminho/nome.');
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const zip = await JSZip.loadAsync(arrayBuffer);
+        
+        // Procura pelo ficheiro .kml dentro do zip
+        let kmlFile = zip.file("doc.kml");
+        if (!kmlFile) {
+          const kmlFiles = zip.file(/\.kml$/i);
+          if (kmlFiles.length > 0) {
+            kmlFile = kmlFiles[0];
+          }
+        }
+
+        if (!kmlFile) {
+          throw new Error("Nenhum ficheiro .kml válido foi encontrado dentro do KMZ.");
+        }
+
+        // Lê o KML como texto
+        const kmlText = await kmlFile.async("string");
+        const parser = new DOMParser();
+        const kmlDom = parser.parseFromString(kmlText, 'text/xml');
+
+        // Verifica erros de parsing no XML
+        const parserError = kmlDom.querySelector('parsererror');
+        if (parserError) {
+          throw new Error("O ficheiro KML interno está corrompido ou mal formatado.");
+        }
+
+        // Cria a camada KML
+        const track = new L.KML(kmlDom);
+        map.addLayer(track);
+
+        // Ajusta o zoom para enquadrar os elementos
+        const bounds = track.getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds);
+        }
+
+        // Configura tooltips e interações
+        track.eachLayer((layer) => {
+          const nomeSetor = layer.feature?.properties?.name || layer.options?.name || "Setor sem nome";
+
+          layer.bindTooltip(`Setor: ${nomeSetor}`, {
+            permanent: false,
+            direction: 'auto',
+            sticky: true,
+            className: 'setor-tooltip'
+          });
+
+          // Estilo base para restaurar no mouseout
+          const defaultStyle = {
+            weight: layer.options.weight || 2,
+            color: layer.options.color || '#3388ff',
+            fillOpacity: layer.options.fillOpacity || 0.2
+          };
+
+          layer.on({
+            mouseover: (e) => {
+              const l = e.target;
+              if (l.setStyle) {
+                l.setStyle({
+                  weight: 3,
+                  color: '#ffff00',
+                  fillOpacity: 0.7
+                });
+              }
+            },
+            mouseout: (e) => {
+              const l = e.target;
+              if (l.setStyle) {
+                l.setStyle(defaultStyle);
+              }
+            }
+          });
+        });
+
+      } catch (error) {
+        console.error("Erro ao processar o KMZ:", error);
+        alert("Erro ao carregar o mapa: " + error.message);
+      }
+    }
+
+    // Executa a função
+    carregarKMZ('ABT.kmz');
+  </script>
+</body>
+</html>
