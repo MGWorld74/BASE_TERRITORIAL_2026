@@ -50,10 +50,6 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 Georgia,"Times New Roman",serif}
 header{padding:20px 20px 8px;text-align:center}
 #th{position:absolute;top:16px;right:20px;width:40px;height:40px;padding:0;font-size:20px;line-height:1;border-radius:50%}
-#vb{position:absolute;top:16px;left:20px;height:40px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid var(--line);border-radius:20px;background:var(--card);color:var(--ink);text-decoration:none;font-size:15px;line-height:1;cursor:pointer}
-#vb:hover{border-color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.2);filter:brightness(.93)}
-#vb:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-@media(max-width:560px){#vb{width:40px;padding:0;justify-content:center;font-size:20px}#vb .vt{display:none}}
 h1{margin:0;font-size:24px}
 .sub{color:var(--mut);font-size:14px;margin-top:2px}
 .bar{display:flex;flex-wrap:wrap;gap:8px;padding:8px 20px 14px;align-items:center}
@@ -71,7 +67,6 @@ table{border-collapse:collapse;width:100%;min-width:1950px}
 th{background:var(--head);color:var(--headink);padding:10px 8px;text-align:center;position:sticky;top:0;white-space:nowrap;z-index:2;border-right:1px solid rgba(255,255,255,.25)}
 td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;background:inherit}
 td.ml{white-space:pre-wrap;min-width:150px}
-td[data-k=obs]{text-align:left}
 tbody tr{background:var(--card)}
 tbody tr:nth-child(even){background:var(--zebra)}
 th.two{line-height:1.15;padding:5px 8px}
@@ -97,7 +92,7 @@ td[contenteditable]:focus{outline:2px solid var(--accent);background:var(--card)
 .wrap td:nth-child(-n+6){z-index:1}.wrap th:nth-child(-n+6){z-index:3}
 .wrap :is(th,td):nth-child(1){--l:0px;--w:70px}.wrap :is(th,td):nth-child(2){--l:70px;--w:150px}
 .wrap :is(th,td):nth-child(3){--l:220px;--w:60px}.wrap :is(th,td):nth-child(4){--l:280px;--w:60px}
-.wrap :is(th,td):nth-child(5){--l:340px;--w:60px}.wrap :is(th,td):nth-child(6){--l:400px;--w:var(--wb,130px);border-right:2px solid var(--line)}
+.wrap :is(th,td):nth-child(5){--l:340px;--w:60px}.wrap :is(th,td):nth-child(6){--l:400px;--w:130px;border-right:2px solid var(--line)}
 @media(max-width:700px){.wrap :is(th,td):not(:nth-child(2)):nth-child(-n+6){left:auto;width:auto;min-width:0;max-width:none}.wrap :is(th,td):nth-child(2){--l:0px}.wrap td:nth-child(2){z-index:2}.wrap th:nth-child(2){z-index:4}}
 .chk input{width:18px;height:18px;padding:0}
 .act button{padding:2px 8px;color:var(--mut)}
@@ -116,7 +111,6 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </head>
 <body>
 <header>
-  <a id="vb" href="index.html" title="Voltar" aria-label="Voltar"><span>←</span><span class="vt">&nbsp;Voltar</span></a>
   <button id="th" aria-label="Alternar claro/escuro" title="Alternar claro/escuro">🌙</button>
   <h1>Setores Ordenados - ABT</h1>
   <div class="sub"><span id="sync">Conectando à planilha…</span> · <b id="sv"></b></div>
@@ -126,17 +120,12 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <button title="Limpar a pesquisa de setor" id="pl" hidden></button>
   <select id="fb" aria-label="Filtrar por bairro"><option value="">Todos os bairros</option></select>
   <select id="fs" aria-label="Filtrar por status"><option value="">Todos</option><option value="p">Pendentes</option><option value="d">Concluídos</option></select>
-  <select id="fp" aria-label="Filtrar por prioridade">
-    <option value="">Todas as prioridades</option>
-    <option value="CNEFE">CNEFE</option>
-    <option value="PNAD">PNAD</option>
-    <option value="SEM">Sem prioridade</option>
-  </select>
   <button title="Incluir um novo setor na tabela e na planilha" id="add">Adicionar setor</button>
   <button title="Ver, incluir e excluir os nomes dos APMs" id="bap">APMs</button>
   <button title="Gerar relatório por coluna e critério" id="rpt">Relatório</button>
   <button title="Reler os dados da planilha agora" id="rf">Atualizar da planilha</button>
   <button title="Baixar todos os setores em arquivo CSV" id="exp">Exportar CSV</button>
+  <button class="p" title="Abrir o mapa de acompanhamento dos setores" id="bmap" onclick="location.href='mapaABT.html'">Mapa Acompanhamento</button>
   <span class="stats" id="st"></span>
 </div>
 <div class="wrap"><table>
@@ -193,7 +182,7 @@ const BO="Barra Olímpica";
 const seed=[];
 // ===== CONFIGURAÇÃO =====
 const SHEET_ID="1DySyEYxXPOS9b_dq9rg5llojf4EAiGvqKL4GSzIibs8",GID="1741145519";
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbzSEEq8b4wsrJAabDuyFUbs8iYR-xJwCH3wLtJrnQhQ0rBPfGkzvxpU5OtubXYOrKKi-g/exec";
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxC_VnX7zjerVnAv7CIjwTuMYWeTSt4Q4OzBIO-BpFjRjfABHwVx6VmoJNISxTqE6N1BQ/exec";
 const EDIT=!!SCRIPT_URL;
 let data=[];
 try{const s=localStorage.getItem("setores_abt_v1");data=s?JSON.parse(s):seed}catch(e){data=seed}
@@ -244,31 +233,18 @@ async function load(){
   $("sync").textContent="Planilha lida às "+hora();
  }catch(e){bairros();render();$("sync").textContent="Não foi possível ler a planilha (mostrando os dados salvos). Ela precisa estar compartilhada como “Qualquer pessoa com o link”."}
 }
-let errMsg="";function push(op,d,k,ant){if(!EDIT)return;if(!pend)fail=0;hold=Date.now()+8000;pend++;sv("Salvando…");
+function push(op,d,k,ant){if(!EDIT)return;if(!pend)fail=0;hold=Date.now()+8000;pend++;sv("Salvando…");
  fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({op,gid:GID,setor:d.setor,ant:ant||d.setor,k,v:k?d[k]:null,row:d})})
- .then(r=>r.text()).then(t=>{if(t.trim()!=="ok"){errMsg=t.trim().slice(0,160);throw 0}}).catch(e=>{fail++;if(e)errMsg="Falha de rede/acesso: "+e}).finally(()=>{pend--;if(pend)return;
-  if(fail)sv("⚠ Erro ao salvar ("+fail+"): "+(errMsg||"sem resposta")+"","#c0392b");else{sv("✓ Salvo às "+hora(),"#1e8e3e");setTimeout(load,3000)}})}
+ .then(r=>r.text()).then(t=>{if(t.trim()!=="ok")throw 0}).catch(()=>{fail++}).finally(()=>{pend--;if(pend)return;
+  if(fail)sv("⚠ Erro ao salvar ("+fail+"). Verifique a conexão e o Apps Script.","#c0392b");else{sv("✓ Salvo às "+hora(),"#1e8e3e");setTimeout(load,3000)}})}
 function save(){try{localStorage.setItem("setores_abt_v1",JSON.stringify(data))}catch(e){}}
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
-// Largura da coluna Bairro = maior nome de bairro (medido em todos os dados, não só nos filtrados)
-function fitBairro(){const w=document.querySelector(".wrap");if(!w)return;
- const el=document.querySelector("#tb td[data-k=bairro]")||document.body,cs=getComputedStyle(el),
-  c=fitBairro.c||(fitBairro.c=document.createElement("canvas").getContext("2d"));
- c.font=`${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
- let m=0;for(const d of data)m=Math.max(m,c.measureText(String(d.bairro||"")).width);
- w.style.setProperty("--wb",Math.max(Math.ceil(m)+30,90)+"px")}
 function bairros(){const u=k=>[...new Set(data.map(d=>d[k]).filter(Boolean))].sort(),b=u("bairro"),cur=$("fb").value;
- $("fb").innerHTML='<option value="">Todos os bairros</option>'+b.map(x=>`<option${x===cur?" selected":""}>${esc(x)}</option>`).join("");fitBairro();
+ $("fb").innerHTML='<option value="">Todos os bairros</option>'+b.map(x=>`<option${x===cur?" selected":""}>${esc(x)}</option>`).join("");
  $("bl").innerHTML=b.map(x=>`<option value="${esc(x)}">`).join("")}
 function render(){
- fitBairro();
-const fb=$("fb").value, fs=$("fs").value, fp=$("fp").value;
-const rows=data.map((d,i)=>[d,i]).filter(([d])=>
-   (!fsetor||d.setor===fsetor||(fsetor.length===4&&d.setor.endsWith(fsetor)))&&
-   (!fb||d.bairro===fb)&&
-   (!fs||(fs==="d")===d.ok)&&
-   (!fp||(fp==="SEM"?!d.pri:d.pri===fp))
- );
+ const fb=$("fb").value,fs=$("fs").value;
+ const rows=data.map((d,i)=>[d,i]).filter(([d])=>(!fsetor||d.setor===fsetor||(fsetor.length===4&&d.setor.endsWith(fsetor)))&&(!fb||d.bairro===fb)&&(!fs||(fs==="d")===d.ok));
  $("tb").innerHTML=rows.map(([d,i])=>`<tr class="${d.ok?"done":d.pri==="CNEFE"?"cnefe":d.pri==="PNAD"?"pnad":""}" data-i="${i}">`+K.map(k=>k==="ok"?`<td class="chk"><input type="checkbox" ${d.ok?"checked":""} aria-label="Concluído"></td>`:k==="pri"?`<td><select class="pri" aria-label="Prioridade CNEFE / PNAD" ${d.ok?"disabled":""}><option value="">—</option><option${d.pri==="CNEFE"?" selected":""}>CNEFE</option><option${d.pri==="PNAD"?" selected":""}>PNAD</option></select></td>`:k==="apm"?apmCell(d):`<td ${EDIT&&!d.ok?'contenteditable="plaintext-only"':""} ${ML.includes(k)?'class="ml" title="Enter = nova linha · Ctrl+Enter = salvar"':""} data-k="${k}">${esc(d[k])}</td>`).join("")+`<td class="act"><button title="Excluir setor" aria-label="Excluir" ${d.ok?"disabled":""}>✕</button></td></tr>`).join("");
  $("em").hidden=rows.length>0;
  const done=data.filter(d=>d.ok).length;
@@ -290,7 +266,7 @@ $("tb").addEventListener("focusout",e=>{const td=e.target.closest("td[data-k]");
 $("tb").addEventListener("keydown",e=>{const k=e.target.dataset&&e.target.dataset.k;if(k&&e.key==="Enter"&&(!ML.includes(k)||e.ctrlKey)){e.preventDefault();e.target.blur()}});
 $("tb").addEventListener("click",e=>{const b=e.target.closest(".act button");if(!b)return;const i=+b.closest("tr").dataset.i;
  if(confirm("Excluir o setor "+data[i].setor+"?")){push("del",data[i]);data.splice(i,1);save();bairros();render()}});
-["fb","fs", "fp"].forEach(id=>$(id).addEventListener("input",render));
+["fb","fs"].forEach(id=>$(id).addEventListener("input",render));
 // ===== Telefone e e-mail: só caracteres válidos, um embaixo do outro, automático =====
 const telEmail=el=>el&&el.matches?(el.matches("td[data-k=tel],td[data-k=email]")?el.dataset.k:el.matches("#fm textarea[name=tel],#fm textarea[name=email]")?el.name:null):null;
 document.addEventListener("beforeinput",e=>{const k=telEmail(e.target),ch=e.data;if(!k||e.inputType!=="insertText"||!ch||ch.length!==1)return;
