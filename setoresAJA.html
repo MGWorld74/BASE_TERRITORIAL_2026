@@ -49,6 +49,8 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 Georgia,"Times New Roman",serif}
 header{padding:20px 20px 8px;text-align:center}
+#bvolta{position:absolute;top:16px;left:20px;height:40px;padding:0 14px}
+@media(max-width:600px){header{padding-top:64px}}
 #th{position:absolute;top:16px;right:20px;width:40px;height:40px;padding:0;font-size:20px;line-height:1;border-radius:50%}
 h1{margin:0;font-size:24px}
 .sub{color:var(--mut);font-size:14px;margin-top:2px}
@@ -112,12 +114,12 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </head>
 <body>
 <header>
+  <button title="Voltar para a página inicial" id="bvolta" onclick="location.href='index.html'">← Voltar</button>
   <button id="th" aria-label="Alternar claro/escuro" title="Alternar claro/escuro">🌙</button>
   <h1>Setores Ordenados - AJA</h1>
   <div class="sub"><span id="sync">Conectando à planilha…</span> · <b id="sv"></b></div>
 </header>
 <div class="bar">
-  <button title="Voltar para a página inicial" id="bvolta" onclick="location.href='index.html'">← Voltar</button>
   <button title="Pesquisar um setor pelo número completo ou pelos 4 últimos números" id="ps">Pesquisar Setor</button>
   <button title="Limpar a pesquisa de setor" id="pl" hidden></button>
   <select id="fb" aria-label="Filtrar por bairro"><option value="">Todos os bairros</option></select>
