@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa de Setores - ABT</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html { width: 100%; height: 100%; font-family: Arial, sans-serif; }
+    #map { width: 100%; height: 100vh; }
+    .setor-tooltip {
+      background-color: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 13px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    .setor-tooltip b { font-size: 15px; color: #ffe066; }
+    .setor-tooltip::before { display: none; }
+    #aviso {
+      position: absolute; z-index: 1000; left: 50%; top: 12px; transform: translateX(-50%);
+      background: #fff; padding: 6px 14px; border-radius: 6px; font-size: 13px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+  <div id="aviso">Carregando mapa…</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <script>
+    // ===== CONFIGURAÇÃO =====
+    // Mesma planilha usada no setoresABT.html (coluna "Status" = caixinha de concluído)
+    const SHEET_ID = "1DySyEYxXPOS9b_dq9rg5llojf4EAiGvqKL4GSzIibs8";
+    const GID = "1741145519";
+    const COR_CONCLUIDO = "#5A7A2E";   // verde musgo
+    const OPACIDADE_CONCLUIDO = 0.45;  // transparência (0 = invisível, 1 = sólido)
+    const ARQUIVO_KMZ = "ABT.kmz";
+
+    const $ = id => document.getElementById(id);
+    const map = L.map('map', { preferCanvas: true }).setView([-22.99, -43.35], 12);
+    const canvas = L.canvas({ padding: 0.5 });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Estilos
+    const ESTILO_NORMAL = { color: '#ffff00', weight: 4, fill: true, fillColor: COR_CONCLUIDO, fillOpacity: 0 };
+    const ESTILO_CONCLUIDO = { fillOpacity: OPACIDADE_CONCLUIDO };
+    const ESTILO_FACE = { color: '#ff0000', weight: 2, interactive: false, renderer: canvas };
+
+    // código completo (15 dígitos) -> { layer, concluido }
+    const setores = new Map();
+    const porFinal4 = new Map();   // 4 últimos dígitos -> [códigos completos]
+
+    function estiloDe(item) {
+      return Object.assign({}, ESTILO_NORMAL, { weight: 4, color: '#ffff00' }, item.concluido ? ESTILO_CONCLUIDO : {});
+    }
+
+    // ===== KML (leitura própria, uma camada por setor) =====
+    const dados = (pm, nome) => {
+      for (const sd of pm.getElementsByTagName('SimpleData')) {
+        if (sd.getAttribute('name') === nome) return sd.textContent.trim();
+      }
+      return '';
+    };
+
+    const parseCoords = txt => txt.trim().split(/\s+/).map(p => {
+      const [lon, lat] = p.split(',');
+      return [parseFloat(lat), parseFloat(lon)];
+    }).filter(c => !isNaN(c[0]) && !isNaN(c[1]));
+
+    function desenharFaces(pm) {
+      for (const ls of pm.getElementsByTagName('LineString')) {
+        const c = ls.getElementsByTagName('coordinates')[0];
+        if (c) L.polyline(parseCoords(c.textContent), ESTILO_FACE).addTo(map);
+      }
+    }
+
+    function desenharSetor(pm) {
+      const nomeEl = pm.getElementsByTagName('name')[0];
+      const codigo = (nomeEl ? nomeEl.textContent : '').trim();
+      if (!codigo) return;
+
+      const polys = [];
+      for (const pg of pm.getElementsByTagName('Polygon')) {
+        const rings = [];
+        const outer = pg.getElementsByTagName('outerBoundaryIs')[0];
+        if (outer) rings.push(parseCoords(outer.getElementsByTagName('coordinates')[0].textContent));
+        for (const inner of pg.getElementsByTagName('innerBoundaryIs')) {
+          rings.push(parseCoords(inner.getElementsByTagName('coordinates')[0].textContent));
+        }
+        if (rings.length) polys.push(rings);
+      }
+      if (!polys.length) return;
+
+      const layer = L.polygon(polys.length === 1 ? polys[0] : polys,
+        Object.assign({ renderer: canvas, interactive: true }, ESTILO_NORMAL));
+      const item = { layer, concluido: false, codigo };
+      setores.set(codigo, item);
+
+      const final4 = dados(pm, 'CD_SETOR') || codigo.slice(-4);
+      if (!porFinal4.has(final4)) porFinal4.set(final4, []);
+      porFinal4.get(final4).push(codigo);
+
+      // Número do setor no mouse (somente este setor reage)
+      layer.bindTooltip(
+        `Setor ${codigo.slice(0, -4)}<b>${codigo.slice(-4)}</b>`,
+        { sticky: true, direction: 'auto', className: 'setor-tooltip' }
+      );
+      layer.on('mouseover', () => layer.setStyle({ weight: 6, color: '#ffffff' }));
+      layer.on('mouseout', () => layer.setStyle(estiloDe(item)));
+      layer.addTo(map);
+    }
+
+    async function carregarKMZ(url) {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('Não foi possível baixar o ' + url + '. Verifique o caminho/nome.');
+      const zip = await JSZip.loadAsync(await resp.arrayBuffer());
+      const kmlFile = zip.file('doc.kml') || (zip.file(/\.kml$/i) || [])[0];
+      if (!kmlFile) throw new Error('Nenhum arquivo .kml encontrado dentro do KMZ.');
+
+      const dom = new DOMParser().parseFromString(await kmlFile.async('string'), 'text/xml');
+      if (dom.querySelector('parsererror')) throw new Error('O KML interno está corrompido.');
+
+      const pms = Array.from(dom.getElementsByTagName('Placemark'));
+      // 1º as faces (linhas, ficam por baixo), depois os setores (polígonos)
+      pms.filter(pm => pm.getElementsByTagName('LineString').length).forEach(desenharFaces);
+      pms.filter(pm => pm.getElementsByTagName('Polygon').length).forEach(desenharSetor);
+
+      const grupo = L.featureGroup(Array.from(setores.values()).map(s => s.layer));
+      if (grupo.getBounds().isValid()) map.fitBounds(grupo.getBounds());
+    }
+
+    // ===== Status vindo da planilha =====
+    function parseCSV(t) {
+      const l1 = t.split('\n')[0];
+      const sep = (l1.match(/;/g) || []).length >= (l1.match(/,/g) || []).length ? ';' : ',';
+      const out = []; let r = [], c = '', q = false;
+      for (let i = 0; i < t.length; i++) {
+        const ch = t[i];
+        if (q) { if (ch === '"' && t[i + 1] === '"') { c += '"'; i++; } else if (ch === '"') q = false; else c += ch; }
+        else if (ch === '"') q = true;
+        else if (ch === sep) { r.push(c); c = ''; }
+        else if (ch === '\n') { r.push(c); out.push(r); r = []; c = ''; }
+        else if (ch !== '\r') c += ch;
+      }
+      if (c || r.length) { r.push(c); out.push(r); }
+      return out;
+    }
+
+    async function atualizarStatus() {
+      try {
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}&_=${Date.now()}`;
+        const r = await fetch(url, { cache: 'no-store' });
+        if (!r.ok) throw new Error('Planilha indisponível');
+        const rows = parseCSV(await r.text()).filter(x => x.some(v => v.trim()));
+        const head = rows[0].map(h => h.trim().toLowerCase());
+        const iSetor = head.indexOf('setor'), iStatus = head.indexOf('status');
+        if (iSetor < 0 || iStatus < 0) throw new Error('Colunas Setor/Status não encontradas');
+
+        const concluidos = new Set();
+        for (const row of rows.slice(1)) {
+          const s = (row[iSetor] || '').replace(/\D/g, '');
+          const ok = /^(sim|true|1|x)$/i.test((row[iStatus] || '').trim());
+          if (!s || !ok) continue;
+          if (setores.has(s)) concluidos.add(s);
+          else if (s.length <= 4) (porFinal4.get(s.padStart(4, '0')) || []).forEach(c => concluidos.add(c));
+        }
+
+        setores.forEach((item, codigo) => {
+          const novo = concluidos.has(codigo);
+          if (novo !== item.concluido) {
+            item.concluido = novo;
+            item.layer.setStyle(estiloDe(item));
+          }
+        });
+      } catch (e) {
+        console.warn('Status não atualizado:', e.message);
+      }
+    }
+
+    (async () => {
+      try {
+        await carregarKMZ(ARQUIVO_KMZ);
+        $('aviso').remove();
+        await atualizarStatus();
+        setInterval(() => { if (!document.hidden) atualizarStatus(); }, 30000);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) atualizarStatus(); });
+      } catch (e) {
+        console.error(e);
+        $('aviso').textContent = 'Erro ao carregar o mapa: ' + e.message;
+      }
+    })();
+  </script>
+</body>
+</html>
