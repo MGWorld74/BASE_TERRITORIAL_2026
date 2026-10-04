@@ -67,6 +67,7 @@ table{border-collapse:collapse;width:100%;min-width:1950px}
 th{background:var(--head);color:var(--headink);padding:10px 8px;text-align:center;position:sticky;top:0;white-space:nowrap;z-index:2;border-right:1px solid rgba(255,255,255,.25)}
 td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;background:inherit}
 td.ml{white-space:pre-wrap;min-width:150px}
+.wrap td:nth-child(12){text-align:left}
 tbody tr{background:var(--card)}
 tbody tr:nth-child(even){background:var(--zebra)}
 th.two{line-height:1.15;padding:5px 8px}
@@ -116,10 +117,12 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <div class="sub"><span id="sync">Conectando à planilha…</span> · <b id="sv"></b></div>
 </header>
 <div class="bar">
+  <button title="Voltar para a página inicial" id="bvolta" onclick="location.href='index.html'">← Voltar</button>
   <button title="Pesquisar um setor pelo número completo ou pelos 4 últimos números" id="ps">Pesquisar Setor</button>
   <button title="Limpar a pesquisa de setor" id="pl" hidden></button>
   <select id="fb" aria-label="Filtrar por bairro"><option value="">Todos os bairros</option></select>
   <select id="fs" aria-label="Filtrar por status"><option value="">Todos</option><option value="p">Pendentes</option><option value="d">Concluídos</option></select>
+  <select id="fp" aria-label="Filtrar por prioridade CNEFE / PNAD" title="Filtrar por Prioridade CNEFE / PNAD"><option value="">Prioridades CNEFE / PNAD</option><option value="CNEFE">Somente CNEFE</option><option value="PNAD">Somente PNAD</option><option value="-">Sem prioridade</option></select>
   <button title="Incluir um novo setor na tabela e na planilha" id="add">Adicionar setor</button>
   <button title="Ver, incluir e excluir os nomes dos APMs" id="bap">APMs</button>
   <button title="Gerar relatório por coluna e critério" id="rpt">Relatório</button>
@@ -243,8 +246,8 @@ function bairros(){const u=k=>[...new Set(data.map(d=>d[k]).filter(Boolean))].so
  $("fb").innerHTML='<option value="">Todos os bairros</option>'+b.map(x=>`<option${x===cur?" selected":""}>${esc(x)}</option>`).join("");
  $("bl").innerHTML=b.map(x=>`<option value="${esc(x)}">`).join("")}
 function render(){
- const fb=$("fb").value,fs=$("fs").value;
- const rows=data.map((d,i)=>[d,i]).filter(([d])=>(!fsetor||d.setor===fsetor||(fsetor.length===4&&d.setor.endsWith(fsetor)))&&(!fb||d.bairro===fb)&&(!fs||(fs==="d")===d.ok));
+ const fb=$("fb").value,fs=$("fs").value,fp=$("fp").value;
+ const rows=data.map((d,i)=>[d,i]).filter(([d])=>(!fsetor||d.setor===fsetor||(fsetor.length===4&&d.setor.endsWith(fsetor)))&&(!fb||d.bairro===fb)&&(!fs||(fs==="d")===d.ok)&&(!fp||(fp==="-"?!d.pri:d.pri===fp)));
  $("tb").innerHTML=rows.map(([d,i])=>`<tr class="${d.ok?"done":d.pri==="CNEFE"?"cnefe":d.pri==="PNAD"?"pnad":""}" data-i="${i}">`+K.map(k=>k==="ok"?`<td class="chk"><input type="checkbox" ${d.ok?"checked":""} aria-label="Concluído"></td>`:k==="pri"?`<td><select class="pri" aria-label="Prioridade CNEFE / PNAD" ${d.ok?"disabled":""}><option value="">—</option><option${d.pri==="CNEFE"?" selected":""}>CNEFE</option><option${d.pri==="PNAD"?" selected":""}>PNAD</option></select></td>`:k==="apm"?apmCell(d):`<td ${EDIT&&!d.ok?'contenteditable="plaintext-only"':""} ${ML.includes(k)?'class="ml" title="Enter = nova linha · Ctrl+Enter = salvar"':""} data-k="${k}">${esc(d[k])}</td>`).join("")+`<td class="act"><button title="Excluir setor" aria-label="Excluir" ${d.ok?"disabled":""}>✕</button></td></tr>`).join("");
  $("em").hidden=rows.length>0;
  const done=data.filter(d=>d.ok).length;
@@ -266,7 +269,7 @@ $("tb").addEventListener("focusout",e=>{const td=e.target.closest("td[data-k]");
 $("tb").addEventListener("keydown",e=>{const k=e.target.dataset&&e.target.dataset.k;if(k&&e.key==="Enter"&&(!ML.includes(k)||e.ctrlKey)){e.preventDefault();e.target.blur()}});
 $("tb").addEventListener("click",e=>{const b=e.target.closest(".act button");if(!b)return;const i=+b.closest("tr").dataset.i;
  if(confirm("Excluir o setor "+data[i].setor+"?")){push("del",data[i]);data.splice(i,1);save();bairros();render()}});
-["fb","fs"].forEach(id=>$(id).addEventListener("input",render));
+["fb","fs","fp"].forEach(id=>$(id).addEventListener("input",render));
 // ===== Telefone e e-mail: só caracteres válidos, um embaixo do outro, automático =====
 const telEmail=el=>el&&el.matches?(el.matches("td[data-k=tel],td[data-k=email]")?el.dataset.k:el.matches("#fm textarea[name=tel],#fm textarea[name=email]")?el.name:null):null;
 document.addEventListener("beforeinput",e=>{const k=telEmail(e.target),ch=e.data;if(!k||e.inputType!=="insertText"||!ch||ch.length!==1)return;
