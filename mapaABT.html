@@ -81,6 +81,8 @@
     const GID = "1741145519";
     const COR_CONCLUIDO = "#5A7A2E";   // verde musgo
     const OPACIDADE_CONCLUIDO = 0.45;  // transparência (0 = invisível, 1 = sólido)
+    const COR_RISCO = "#FF0000";       // vermelho (Área de Risco)
+    const OPACIDADE_RISCO = 0.65;      // 65%
     const ARQUIVO_KMZ = "ABT.kmz";
 
     const $ = id => document.getElementById(id);
@@ -122,7 +124,10 @@
     const porFinal4 = new Map();   // 4 últimos dígitos -> [códigos completos]
 
     function estiloDe(item) {
-      return Object.assign({}, ESTILO_NORMAL, { weight: 4, color: '#ffff00' }, item.concluido ? ESTILO_CONCLUIDO : {});
+      // Área de Risco (vermelho) prevalece sobre Concluído
+      const fundo = item.risco ? { fillColor: COR_RISCO, fillOpacity: OPACIDADE_RISCO }
+                  : item.concluido ? ESTILO_CONCLUIDO : {};
+      return Object.assign({}, ESTILO_NORMAL, { weight: 4, color: '#ffff00' }, fundo);
     }
 
     // ===== KML (leitura própria, uma camada por setor) =====
@@ -164,7 +169,7 @@
 
       const layer = L.polygon(polys.length === 1 ? polys[0] : polys,
         Object.assign({ renderer: canvas, interactive: true }, ESTILO_NORMAL));
-      const item = { layer, concluido: false, codigo };
+      const item = { layer, concluido: false, risco: false, codigo };
       setores.set(codigo, item);
 
       const final4 = dados(pm, 'CD_SETOR') || codigo.slice(-4);
@@ -224,22 +229,31 @@
         if (!r.ok) throw new Error('Planilha indisponível');
         const rows = parseCSV(await r.text()).filter(x => x.some(v => v.trim()));
         const head = rows[0].map(h => h.trim().toLowerCase());
+        const semAcento = h => h.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const iSetor = head.indexOf('setor'), iStatus = head.indexOf('status');
+        const iRisco = head.findIndex(h => semAcento(h) === 'area de risco');
         if (iSetor < 0 || iStatus < 0) throw new Error('Colunas Setor/Status não encontradas');
 
-        const concluidos = new Set();
+        const concluidos = new Set(), riscos = new Set();
+        const codigosDe = s => {
+          if (setores.has(s)) return [s];
+          if (s.length <= 4) return porFinal4.get(s.padStart(4, '0')) || [];
+          return [];
+        };
         for (const row of rows.slice(1)) {
           const s = (row[iSetor] || '').replace(/\D/g, '');
-          const ok = /^(sim|true|1|x)$/i.test((row[iStatus] || '').trim());
-          if (!s || !ok) continue;
-          if (setores.has(s)) concluidos.add(s);
-          else if (s.length <= 4) (porFinal4.get(s.padStart(4, '0')) || []).forEach(c => concluidos.add(c));
+          if (!s) continue;
+          const ok = /^(sim|true|1|x|verdadeiro)$/i.test((row[iStatus] || '').trim());
+          const risco = iRisco >= 0 && /^(sim|true|1|x|verdadeiro)$/i.test((row[iRisco] || '').trim());
+          if (ok) codigosDe(s).forEach(c => concluidos.add(c));
+          if (risco) codigosDe(s).forEach(c => riscos.add(c));
         }
 
         setores.forEach((item, codigo) => {
-          const novo = concluidos.has(codigo);
-          if (novo !== item.concluido) {
+          const novo = concluidos.has(codigo), novoR = riscos.has(codigo);
+          if (novo !== item.concluido || novoR !== item.risco) {
             item.concluido = novo;
+            item.risco = novoR;
             item.layer.setStyle(estiloDe(item));
           }
         });

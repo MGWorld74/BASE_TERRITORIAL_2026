@@ -78,6 +78,7 @@ th{background:var(--head);color:var(--headink);padding:10px 8px;text-align:cente
 td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;background:inherit}
 td.ml{white-space:pre-wrap;min-width:150px}
 .wrap td:nth-child(12){text-align:left}
+td[data-k="end"]{text-align:left}
 tbody tr{background:var(--card)}
 tbody tr:nth-child(even){background:var(--zebra)}
 th.two{line-height:1.15;padding:5px 8px}
@@ -155,6 +156,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <label class="full">Endereço<input name="end"></label>
 <label class="full">E-mail (um por linha)<textarea name="email" rows="2" inputmode="email" autocapitalize="off" spellcheck="false"></textarea></label>
 <label class="full">Observações<textarea name="obs" rows="2"></textarea></label>
+<label class="full" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="risco" style="width:16px;height:16px;padding:0"> Área de Risco</label>
 </div>
 <datalist id="bl"></datalist>
 <div class="row"><button type="button" title="Fechar sem salvar" id="cn">Cancelar</button><button class="p" type="submit" title="Salvar o novo setor">Salvar setor</button></div>
@@ -201,8 +203,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </dialog>
 
 <script>
-const K=["ok","setor","euv","edoc","tipo","bairro","pri","end","tel","w1","email","obs","apm"];
-const H=["Status","Setor","EUV","EDOC","Tipo","Bairro","Prioridade CNEFE / PNAD","Endereço","Telefone","WhatsApp","E-mail","Observações","APM"];
+const K=["ok","setor","euv","edoc","tipo","bairro","pri","end","tel","w1","email","obs","apm","risco"];
+const H=["Status","Setor","EUV","EDOC","Tipo","Bairro","Prioridade CNEFE / PNAD","Endereço","Telefone","WhatsApp","E-mail","Observações","APM","Área de Risco"];
 const ML=["tel","email","obs"];
 const mk=(s,e,d,b,ok,c)=>Object.assign({setor:s,euv:e,edoc:d,tipo:"0",bairro:b,ok:!!ok,tel:"",w1:"",tel2:"",w2:"",email:"",end:"",apm:"",obs:""},c||{});
 const ct={tel:"(21) 3495-0958",w1:"Sim",tel2:"Não se aplica.",w2:"Não se aplica.",email:"millenioilhapura.adm@gmail.com",end:"Av. Abraham Medina, 355"};
@@ -216,7 +218,7 @@ const EDIT=!!SCRIPT_URL;
 let data=[];
 try{const s=localStorage.getItem("setores_v1");data=s?JSON.parse(s):seed}catch(e){data=seed}
 let local={};try{local=JSON.parse(localStorage.getItem("status_local")||"{}")}catch(e){}
-const hIdx=r0=>K.map((k,i)=>r0.findIndex(h=>{h=h.trim().toLowerCase();return h===H[i].toLowerCase()||(k==="w1"&&h==="tem whatsapp?")}));
+const hIdx=r0=>K.map((k,i)=>r0.findIndex(h=>{h=h.trim().toLowerCase();return h===H[i].toLowerCase()||(k==="w1"&&h==="tem whatsapp?")||(k==="risco"&&h==="area de risco")}));
 const $=id=>document.getElementById(id);
 const hora=()=>new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 let hold=0,pend=0,fail=0,fsetor="";
@@ -244,7 +246,7 @@ function norm(k,v){v=String(v??"").replace(/\r/g,"");
  if(k==="email"){const m=v.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g);return(m||v.split(/[\n;,\s]+/).map(x=>x.trim()).filter(Boolean)).join("\n")}
  if(k==="apm")return[...new Set(v.split(/[\n;,]+/).map(x=>x.trim()).filter(Boolean))].join("\n");
  return v.trim()}
-const fix=o=>{K.forEach(k=>{if(o[k]==null)o[k]=k==="ok"?false:""});ML.concat("apm").forEach(k=>o[k]=norm(k,o[k]));return o};
+const fix=o=>{K.forEach(k=>{if(o[k]==null)o[k]=(k==="ok"||k==="risco")?false:""});ML.concat("apm").forEach(k=>o[k]=norm(k,o[k]));return o};
 data.forEach(fix);
 function sv(t,c){const e=$("sv");e.textContent=t;e.style.color=c||"var(--mut)"}
 async function load(){
@@ -256,7 +258,7 @@ async function load(){
   const idx=hIdx(rows[0]);
   if(idx[K.indexOf("setor")]<0)throw 0;
   const prev={};data.forEach(d=>prev[d.setor]=d);
-  data=rows.slice(1).map(r=>{const o={};K.forEach((k,i)=>{const v=idx[i]>=0?(r[idx[i]]||"").trim():(k==="pri"&&prev[o.setor]?prev[o.setor].pri:"");o[k]=k==="ok"?/^(sim|true|1|x)$/i.test(v):v});
+  data=rows.slice(1).map(r=>{const o={};K.forEach((k,i)=>{const v=idx[i]>=0?(r[idx[i]]||"").trim():(k==="pri"&&prev[o.setor]?prev[o.setor].pri:"");o[k]=(k==="ok"||k==="risco")?/^(sim|true|1|x|verdadeiro)$/i.test(v):v});
    if(!EDIT&&o.setor in local)o.ok=local[o.setor];return fix(o)}).filter(o=>o.setor);
   save();bairros();render();
   $("sync").textContent="Planilha lida às "+hora();
@@ -276,7 +278,7 @@ function render(){
  ajustaBairro();
  const fb=$("fb").value,fs=$("fs").value,fp=$("fp").value;
  const rows=data.map((d,i)=>[d,i]).filter(([d])=>(!fsetor||d.setor===fsetor||(fsetor.length===4&&d.setor.endsWith(fsetor)))&&(!fb||d.bairro===fb)&&(!fs||(fs==="d")===d.ok)&&(!fp||(fp==="-"?!d.pri:d.pri===fp)));
- $("tb").innerHTML=rows.map(([d,i])=>`<tr class="${d.ok?"done":d.pri==="CNEFE"?"cnefe":d.pri==="PNAD"?"pnad":""}" data-i="${i}">`+K.map(k=>k==="ok"?`<td class="chk"><input type="checkbox" ${d.ok?"checked":""} aria-label="Concluído"></td>`:k==="pri"?`<td><select class="pri" aria-label="Prioridade CNEFE / PNAD" ${d.ok?"disabled":""}><option value="">—</option><option${d.pri==="CNEFE"?" selected":""}>CNEFE</option><option${d.pri==="PNAD"?" selected":""}>PNAD</option></select></td>`:k==="apm"?apmCell(d):`<td ${EDIT&&!d.ok?'contenteditable="plaintext-only"':""} ${ML.includes(k)?'class="ml" title="Enter = nova linha · Ctrl+Enter = salvar"':""} data-k="${k}">${esc(d[k])}</td>`).join("")+`<td class="act"><button title="Excluir setor" aria-label="Excluir" ${d.ok?"disabled":""}>✕</button></td></tr>`).join("");
+ $("tb").innerHTML=rows.map(([d,i])=>`<tr class="${d.ok?"done":d.pri==="CNEFE"?"cnefe":d.pri==="PNAD"?"pnad":""}" data-i="${i}">`+K.map(k=>k==="ok"?`<td class="chk"><input type="checkbox" ${d.ok?"checked":""} aria-label="Concluído"></td>`:k==="risco"?`<td class="chk"><input type="checkbox" data-r="1" ${d.risco?"checked":""} ${EDIT?"":"disabled"} aria-label="Área de Risco"></td>`:k==="pri"?`<td><select class="pri" aria-label="Prioridade CNEFE / PNAD" ${d.ok?"disabled":""}><option value="">—</option><option${d.pri==="CNEFE"?" selected":""}>CNEFE</option><option${d.pri==="PNAD"?" selected":""}>PNAD</option></select></td>`:k==="apm"?apmCell(d):`<td ${EDIT&&!d.ok?'contenteditable="plaintext-only"':""} ${ML.includes(k)?'class="ml" title="Enter = nova linha · Ctrl+Enter = salvar"':""} data-k="${k}">${esc(d[k])}</td>`).join("")+`<td class="act"><button title="Excluir setor" aria-label="Excluir" ${d.ok?"disabled":""}>✕</button></td></tr>`).join("");
  $("em").hidden=rows.length>0;
  const done=data.filter(d=>d.ok).length;
  const pc=n=>(data.length?n/data.length*100:0).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%";
@@ -285,7 +287,7 @@ function render(){
 function setVal(d,k,v){const old=d[k],ant=d.setor;if(old===v)return;d[k]=v;
  if(k==="ok"&&!EDIT){local[d.setor]=v;try{localStorage.setItem("status_local",JSON.stringify(local))}catch(x){}}
  save();push("set",d,k,ant)}
-$("tb").addEventListener("change",e=>{if(e.target.type!=="checkbox")return;setVal(data[e.target.closest("tr").dataset.i],"ok",e.target.checked);render()});
+$("tb").addEventListener("change",e=>{if(e.target.type!=="checkbox")return;setVal(data[e.target.closest("tr").dataset.i],e.target.dataset.r?"risco":"ok",e.target.checked);render()});
 $("tb").addEventListener("change",e=>{const t=e.target;if(!t.matches("select.pri,select.apm"))return;const d=data[t.closest("tr").dataset.i];
  if(t.classList.contains("apm")){const a=apmArr(d.apm);if(t.value&&!a.includes(t.value)){a.push(t.value);setVal(d,"apm",a.join("\n"))}}
  else setVal(d,"pri",t.value);
@@ -350,11 +352,11 @@ $("add").onclick=()=>{fillApmForm();$("fm").reset();$("dlg").showModal()};
 $("cn").onclick=()=>$("dlg").close();
 $("fm").addEventListener("submit",e=>{const f=new FormData($("fm")),s=f.get("setor").trim();
  if(data.some(x=>x.setor===s)){e.preventDefault();alert("Já existe um setor com este número.");return}
- const o={ok:false};K.forEach(k=>{if(k!=="ok")o[k]=norm(k,k==="apm"?f.getAll("apm").join("\n"):(f.get(k)??""))});
+ const o={ok:false,risco:f.has("risco")};K.forEach(k=>{if(k!=="ok"&&k!=="risco")o[k]=norm(k,k==="apm"?f.getAll("apm").join("\n"):(f.get(k)??""))});
  data.push(o);push("add",o);save();bairros();render()});
 function csvLine(a){return a.map(v=>{v=String(v??"");return /[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}).join(";")}
 function dl(n,rows){const t="\ufeff"+rows.map(csvLine).join("\n");try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/csv;charset=utf-8"}));a.download=n;a.click()}catch(e){alert("Não foi possível baixar o arquivo neste ambiente.")}}
-$("exp").onclick=()=>dl("setores.csv",[H].concat(data.map(d=>K.map(k=>k==="ok"?(d.ok?"Sim":"Não"):d[k]))));
+$("exp").onclick=()=>dl("setores.csv",[H].concat(data.map(d=>K.map(k=>k==="ok"?(d.ok?"Sim":"Não"):k==="risco"?(d.risco?"Sim":"Não"):d[k]))));
 // ===== Tema =====
 function theme(t){document.documentElement.dataset.theme=t;$("th").textContent=t==="dark"?"☀️":"🌙";try{localStorage.setItem("tema",t)}catch(e){}}
 let t0=null;try{t0=localStorage.getItem("tema")}catch(e){}
@@ -362,7 +364,7 @@ theme(t0||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"));
 $("th").onclick=()=>theme(document.documentElement.dataset.theme==="dark"?"light":"dark");
 // ===== Relatório =====
 $("rc").innerHTML=H.map((h,i)=>`<option value="${i}">${h}</option>`).join("");
-const disp=(d,k)=>k==="ok"?(d.ok?"Concluído":"Pendente"):String(d[k]??"");
+const disp=(d,k)=>k==="ok"?(d.ok?"Concluído":"Pendente"):k==="risco"?(d.risco?"Sim":"Não"):String(d[k]??"");
 let rep=[];
 function rlist(){const k=K[+$("rc").value];$("rl").innerHTML=[...new Set(data.flatMap(d=>disp(d,k).split("\n")).filter(Boolean))].sort().map(x=>`<option value="${esc(x)}">`).join("")}
 function report(){const i=+$("rc").value,k=K[i],op=$("rop").value,v=$("rv").value.trim().toLowerCase();
@@ -391,7 +393,7 @@ function prRender(){const m=document.querySelector("input[name=pesc]:checked").v
  $("prp").disabled=!cols.length||!rows.length;
  if(!cols.length){$("pt").innerHTML='<p class="empty">Marque ao menos uma coluna.</p>';return}
  if(!rows.length){$("pt").innerHTML='<p class="empty">Nenhum setor para imprimir com essa seleção.</p>';return}
- $("pt").innerHTML=`<h3>${esc(document.querySelector("h1").textContent)}</h3><p>${esc(prDesc(m))} · ${rows.length} de ${data.length} setores · EUV ${s("euv")} · EDOC ${s("edoc")} · emitido em ${new Date().toLocaleString("pt-BR")}</p><div class="wrap2"><table><thead><tr>${cols.map(k=>`<th>${H[K.indexOf(k)]}</th>`).join("")}</tr></thead><tbody>${rows.map(d=>`<tr class="${d.ok?"r-d":d.pri==="CNEFE"?"r-c":d.pri==="PNAD"?"r-p":""}">`+cols.map(k=>`<td class="ml${k==="obs"?" l":""}">${esc(disp(d,k))}</td>`).join("")+"</tr>").join("")}</tbody></table></div>`}
+ $("pt").innerHTML=`<h3>${esc(document.querySelector("h1").textContent)}</h3><p>${esc(prDesc(m))} · ${rows.length} de ${data.length} setores · EUV ${s("euv")} · EDOC ${s("edoc")} · emitido em ${new Date().toLocaleString("pt-BR")}</p><div class="wrap2"><table><thead><tr>${cols.map(k=>`<th>${H[K.indexOf(k)]}</th>`).join("")}</tr></thead><tbody>${rows.map(d=>`<tr class="${d.ok?"r-d":d.pri==="CNEFE"?"r-c":d.pri==="PNAD"?"r-p":""}">`+cols.map(k=>`<td class="ml${k==="obs"||k==="end"?" l":""}">${esc(disp(d,k))}</td>`).join("")+"</tr>").join("")}</tbody></table></div>`}
 $("pd").addEventListener("input",prRender);
 $("bimp").onclick=()=>{prRender();$("pd").showModal()};
 $("pk").onclick=()=>$("pd").close();
