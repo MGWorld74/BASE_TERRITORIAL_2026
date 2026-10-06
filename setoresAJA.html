@@ -77,8 +77,10 @@ table{border-collapse:collapse;width:100%;min-width:1950px}
 th{background:var(--head);color:var(--headink);padding:10px 8px;text-align:center;position:sticky;top:0;white-space:nowrap;z-index:2;border-right:1px solid rgba(255,255,255,.25)}
 td{padding:7px 8px;text-align:center;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;background:inherit}
 td.ml{white-space:pre-wrap;min-width:150px}
-.wrap td:nth-child(12){text-align:left}
-td[data-k="end"]{text-align:left}
+td[data-k="end"],td[data-k="obs"]{text-align:left}
+#bsv{font-weight:bold}
+#bsv.alt{background:#d97706;border-color:#d97706;color:#fff}
+#bsv:disabled{opacity:.5;cursor:not-allowed}
 tbody tr{background:var(--card)}
 tbody tr:nth-child(even){background:var(--zebra)}
 th.two{line-height:1.15;padding:5px 8px}
@@ -134,6 +136,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <select id="fb" aria-label="Filtrar por bairro"><option value="">Todos os bairros</option></select>
   <select id="fs" aria-label="Filtrar por status"><option value="">Todos</option><option value="p">Pendentes</option><option value="d">Concluídos</option></select>
   <select id="fp" aria-label="Filtrar por prioridade CNEFE / PNAD" title="Filtrar por Prioridade CNEFE / PNAD"><option value="">Prioridades CNEFE / PNAD</option><option value="CNEFE">Somente CNEFE</option><option value="PNAD">Somente PNAD</option><option value="-">Sem prioridade</option></select>
+  <button title="Gravar na planilha as alterações feitas" id="bsv" disabled>Salvar</button>
   <button title="Incluir um novo setor na tabela e na planilha" id="add">Adicionar setor</button>
   <button title="Ver, incluir e excluir os nomes dos APMs" id="bap">APMs</button>
   <button title="Gerar relatório por coluna e critério" id="rpt">Relatório</button>
@@ -159,7 +162,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <label class="full" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" name="risco" style="width:16px;height:16px;padding:0"> Área de Risco</label>
 </div>
 <datalist id="bl"></datalist>
-<div class="row"><button type="button" title="Fechar sem salvar" id="cn">Cancelar</button><button class="p" type="submit" title="Salvar o novo setor">Salvar setor</button></div>
+<div class="row"><button type="button" title="Fechar sem salvar" id="cn">Cancelar</button><button class="p" type="submit" title="Incluir o novo setor na tabela (depois clique em Salvar)">Incluir setor</button></div>
 </form></dialog>
 
 <dialog id="dps" style="width:min(380px,94vw)"><form id="fps" autocomplete="off">
@@ -250,6 +253,7 @@ const fix=o=>{K.forEach(k=>{if(o[k]==null)o[k]=(k==="ok"||k==="risco")?false:""}
 data.forEach(fix);
 function sv(t,c){const e=$("sv");e.textContent=t;e.style.color=c||"var(--mut)"}
 async function load(){
+ if(fila.length||enviando){btnSalvar();return}
  if(!data.length)$("st").textContent="Carregando da planilha…";
  try{
   const r=await fetch(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}&_=${Date.now()}`,{cache:"no-store"});
@@ -264,10 +268,21 @@ async function load(){
   $("sync").textContent="Planilha lida às "+hora();
  }catch(e){bairros();render();$("sync").textContent="Não foi possível ler a planilha (mostrando os dados salvos). Ela precisa estar compartilhada como “Qualquer pessoa com o link”."}
 }
-function push(op,d,k,ant){if(!EDIT)return;if(!pend)fail=0;hold=Date.now()+8000;pend++;sv("Salvando…");
- fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({op,gid:GID,setor:d.setor,ant:ant||d.setor,k,v:k?d[k]:null,row:d})})
- .then(r=>r.text()).then(t=>{if(t.trim()!=="ok")throw 0}).catch(()=>{fail++}).finally(()=>{pend--;if(pend)return;
-  if(fail)sv("⚠ Erro ao salvar ("+fail+"). Verifique a conexão e o Apps Script.","#c0392b");else{sv("✓ Salvo às "+hora(),"#1e8e3e");setTimeout(load,3000)}})}
+let fila=[],enviando=false;try{const f=JSON.parse(localStorage.getItem("fila_aja")||"[]");if(Array.isArray(f))fila=f}catch(e){}
+function saveFila(){try{localStorage.setItem("fila_aja",JSON.stringify(fila))}catch(e){}}
+function btnSalvar(){const b=$("bsv"),n=fila.length;b.disabled=!n||enviando;b.textContent=n?`Salvar (${n})`:"Salvar";b.classList.toggle("alt",!!n);
+ if(n&&!enviando)sv("● "+n+" alteração(ões) ainda não gravada(s) na planilha. Clique em Salvar.","#d97706")}
+function push(op,d,k,ant){if(!EDIT)return;
+ const m={op,gid:GID,setor:d.setor,ant:ant||d.setor,k,v:k?d[k]:null,row:op==="add"?JSON.parse(JSON.stringify(d)):null};
+ if(op==="set"){const x=fila.find(q=>q.op==="set"&&q.setor===m.setor&&q.ant===m.ant&&q.k===k);if(x)x.v=m.v;else fila.push(m)}else fila.push(m);
+ saveFila();btnSalvar()}
+async function salvar(){if(enviando||!fila.length)return;enviando=true;hold=Date.now()+8000;$("bsv").disabled=true;sv("Salvando…");let erro="";
+ while(fila.length){try{const r=await fetch(SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(fila[0])});const t=(await r.text()).trim();if(t!=="ok")throw new Error(t||"sem resposta")}catch(e){erro=e.message||"falha de conexão";break}
+  fila.shift();saveFila()}
+ enviando=false;btnSalvar();
+ if(erro)sv("⚠ Erro ao salvar ("+fila.length+" pendente(s)): "+erro,"#c0392b");else{sv("✓ Salvo às "+hora(),"#1e8e3e");setTimeout(load,3000)}}
+$("bsv").onclick=salvar;
+addEventListener("beforeunload",e=>{if(fila.length){e.preventDefault();e.returnValue=""}});
 function save(){try{localStorage.setItem("setores_v1",JSON.stringify(data))}catch(e){}}
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function bairros(){const u=k=>[...new Set(data.map(d=>d[k]).filter(Boolean))].sort(),b=u("bairro"),cur=$("fb").value;
@@ -278,7 +293,7 @@ function render(){
  ajustaBairro();
  const fb=$("fb").value,fs=$("fs").value,fp=$("fp").value;
  const rows=data.map((d,i)=>[d,i]).filter(([d])=>(!fsetor||d.setor===fsetor||(fsetor.length===4&&d.setor.endsWith(fsetor)))&&(!fb||d.bairro===fb)&&(!fs||(fs==="d")===d.ok)&&(!fp||(fp==="-"?!d.pri:d.pri===fp)));
- $("tb").innerHTML=rows.map(([d,i])=>`<tr class="${d.ok?"done":d.pri==="CNEFE"?"cnefe":d.pri==="PNAD"?"pnad":""}" data-i="${i}">`+K.map(k=>k==="ok"?`<td class="chk"><input type="checkbox" ${d.ok?"checked":""} aria-label="Concluído"></td>`:k==="risco"?`<td class="chk"><input type="checkbox" data-r="1" ${d.risco?"checked":""} ${EDIT?"":"disabled"} aria-label="Área de Risco"></td>`:k==="pri"?`<td><select class="pri" aria-label="Prioridade CNEFE / PNAD" ${d.ok?"disabled":""}><option value="">—</option><option${d.pri==="CNEFE"?" selected":""}>CNEFE</option><option${d.pri==="PNAD"?" selected":""}>PNAD</option></select></td>`:k==="apm"?apmCell(d):`<td ${EDIT&&!d.ok?'contenteditable="plaintext-only"':""} ${ML.includes(k)?'class="ml" title="Enter = nova linha · Ctrl+Enter = salvar"':""} data-k="${k}">${esc(d[k])}</td>`).join("")+`<td class="act"><button title="Excluir setor" aria-label="Excluir" ${d.ok?"disabled":""}>✕</button></td></tr>`).join("");
+ $("tb").innerHTML=rows.map(([d,i])=>`<tr class="${d.ok?"done":d.pri==="CNEFE"?"cnefe":d.pri==="PNAD"?"pnad":""}" data-i="${i}">`+K.map(k=>k==="ok"?`<td class="chk"><input type="checkbox" ${d.ok?"checked":""} aria-label="Concluído"></td>`:k==="risco"?`<td class="chk"><input type="checkbox" data-r="1" ${d.risco?"checked":""} ${EDIT?"":"disabled"} aria-label="Área de Risco"></td>`:k==="pri"?`<td><select class="pri" aria-label="Prioridade CNEFE / PNAD" ${d.ok?"disabled":""}><option value="">—</option><option${d.pri==="CNEFE"?" selected":""}>CNEFE</option><option${d.pri==="PNAD"?" selected":""}>PNAD</option></select></td>`:k==="apm"?apmCell(d):`<td ${EDIT&&!d.ok?'contenteditable="plaintext-only"':""} ${ML.includes(k)?'class="ml" title="Enter = nova linha · Ctrl+Enter = confirmar"':""} data-k="${k}">${esc(d[k])}</td>`).join("")+`<td class="act"><button title="Excluir setor" aria-label="Excluir" ${d.ok?"disabled":""}>✕</button></td></tr>`).join("");
  $("em").hidden=rows.length>0;
  const done=data.filter(d=>d.ok).length;
  const pc=n=>(data.length?n/data.length*100:0).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%";
@@ -372,7 +387,7 @@ function report(){const i=+$("rc").value,k=K[i],op=$("rop").value,v=$("rv").valu
   return op==="c"?x.includes(v):op==="e"?x.split("\n").includes(v)||x===v:op==="v"?!x:op==="n"?!!x:op==="g"?parseFloat(x)>parseFloat(v):parseFloat(x)<parseFloat(v)});
  const s=f=>rep.reduce((a,d)=>a+(parseFloat(d[f])||0),0);
  const crit=H[i]+" "+$("rop").selectedOptions[0].text+(["v","n"].includes(op)?"":" “"+$("rv").value+"”");
- $("rr").innerHTML=`<h3>Relatório: ${esc(crit)}</h3><p>${rep.length} de ${data.length} setores · EUV ${s("euv")} · EDOC ${s("edoc")} · emitido em ${new Date().toLocaleString("pt-BR")}</p><div class="wrap2"><table><thead><tr>${H.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rep.map(d=>"<tr>"+K.map(k=>`<td class="ml">${esc(disp(d,k))}</td>`).join("")+"</tr>").join("")}</tbody></table></div>`}
+ $("rr").innerHTML=`<h3>Relatório: ${esc(crit)}</h3><p>${rep.length} de ${data.length} setores · EUV ${s("euv")} · EDOC ${s("edoc")} · emitido em ${new Date().toLocaleString("pt-BR")}</p><div class="wrap2"><table><thead><tr>${H.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rep.map(d=>"<tr>"+K.map(k=>`<td class="ml${k==="obs"||k==="end"?" l":""}">${esc(disp(d,k))}</td>`).join("")+"</tr>").join("")}</tbody></table></div>`}
 $("rc").addEventListener("input",()=>{$("rv").value="";rlist()});
 ["rc","rop","rv"].forEach(id=>$(id).addEventListener("input",report));
 $("rpt").onclick=()=>{rlist();report();$("rd").showModal()};
@@ -404,8 +419,8 @@ function parseCSV(t){const sep=(t.split("\n")[0].match(/;/g)||[]).length>=(t.spl
   if(q){if(ch==='"'&&t[i+1]==='"'){c+='"';i++}else if(ch==='"')q=false;else c+=ch}
   else if(ch==='"')q=true;else if(ch===sep){r.push(c);c=""}else if(ch==="\n"){r.push(c);out.push(r);r=[];c=""}else if(ch!=="\r")c+=ch}
  if(c||r.length){r.push(c);out.push(r)}return out}
-if(!EDIT){$("add").hidden=true;document.body.classList.add("ro");sv("Modo leitura: configure SCRIPT_URL para salvar na planilha.")}
-$("rf").onclick=load;load();
+if(!EDIT){$("add").hidden=true;$("bsv").hidden=true;document.body.classList.add("ro");sv("Modo leitura: configure SCRIPT_URL para salvar na planilha.")}
+$("rf").onclick=()=>{if(fila.length){if(!confirm("Há "+fila.length+" alteração(ões) não salva(s). Atualizar agora vai descartá-las. Continuar?"))return;fila=[];saveFila();sv("");btnSalvar()}load()};btnSalvar();load();
 setInterval(()=>{if(!document.hidden&&Date.now()>hold&&!document.activeElement.isContentEditable&&!document.activeElement.matches("select.pri,select.apm"))load()},10000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()>hold)load()});
 </script>
