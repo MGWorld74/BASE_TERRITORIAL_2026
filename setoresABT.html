@@ -245,10 +245,10 @@ function telLines(v,fin){return String(v??"").replace(/\r/g,"").split("\n").flat
  if(fin&&d.length>=8&&d.length<=9)return[d.slice(0,-4)+"-"+d.slice(-4)];
  const o=[];while(d){const L=d.length>=3?(d[2]==="9"?11:10):99;o.push(fmtPart(d.slice(0,L)));d=d.slice(L)}
  return o.length?o:[""]}))}
-const emailLive=v=>String(v??"").replace(/\r/g,"").replace(/[ \t\u00a0,;]+/g,"\n").replace(/\n{2,}/g,"\n").replace(/^\n/,"");
+const emailLive=v=>String(v??"").replace(/\r/g,"").replace(/[ \t\u00a0,;]+/g,"\n").replace(/\n{2,}/g,"\n").replace(/^\n/,"").toLowerCase();
 function norm(k,v){v=String(v??"").replace(/\r/g,"");
  if(k==="tel"||k==="tel2")return telLines(v,true).filter(Boolean).join("\n");
- if(k==="email"){const m=v.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g);return(m||v.split(/[\n;,\s]+/).map(x=>x.trim()).filter(Boolean)).join("\n")}
+ if(k==="email"){const m=v.match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g);return(m||v.split(/[\n;,\s]+/).map(x=>x.trim()).filter(Boolean)).join("\n").toLowerCase()}
  if(k==="apm")return[...new Set(v.split(/[\n;,]+/).map(x=>x.trim()).filter(Boolean))].join("\n");
  return v.trim()}
 const fix=o=>{K.forEach(k=>{if(o[k]==null)o[k]=(k==="ok"||k==="risco")?false:""});ML.concat("apm").forEach(k=>o[k]=norm(k,o[k]));return o};
