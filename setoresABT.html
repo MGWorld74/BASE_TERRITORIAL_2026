@@ -72,6 +72,10 @@ button:not(:disabled):active{transform:translateY(1px)}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .ms{color:#c0392b;font-size:13px;margin-top:8px;min-height:1.2em}
 .stats{margin-left:auto;color:var(--mut);font-size:14px}
+.tit{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:4px 18px}
+.tit .stats{margin:0;color:#1a56db;font-size:15px;font-weight:bold}
+:root[data-theme="dark"] .tit .stats{color:#6ea8ff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tit .stats{color:#6ea8ff}}
 .wrap{margin:0 20px 40px;overflow:auto;max-height:calc(100vh - 170px);border:1px solid var(--line);border-radius:6px;background:var(--card)}
 table{border-collapse:collapse;width:100%;min-width:1950px}
 th{background:var(--head);color:var(--headink);padding:10px 8px;text-align:center;position:sticky;top:0;white-space:nowrap;z-index:2;border-right:1px solid rgba(255,255,255,.25)}
@@ -127,7 +131,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <header>
   <div id="topl"><button title="Voltar para a página inicial" id="bvolta" onclick="location.href='index.html'">← Voltar</button><button title="Imprimir ou salvar em PDF os setores escolhidos" id="bimp">🖨 Imprimir</button></div>
   <button id="th" aria-label="Alternar claro/escuro" title="Alternar claro/escuro">🌙</button>
-  <h1>Setores Ordenados - ABT</h1>
+  <div class="tit"><h1>Setores Ordenados - ABT</h1><span class="stats" id="st"></span></div>
   <div class="sub"><span id="sync">Conectando à planilha…</span> · <b id="sv"></b></div>
 </header>
 <div class="bar">
@@ -143,7 +147,6 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <button title="Reler os dados da planilha agora" id="rf">Atualizar da planilha</button>
   <button title="Baixar todos os setores em arquivo CSV" id="exp">Exportar CSV</button>
   <button class="p" title="Abrir o mapa de acompanhamento dos setores" id="bmap" onclick="location.href='mapaABT.html'">Mapa Acompanhamento</button>
-  <span class="stats" id="st"></span>
 </div>
 <div class="wrap"><table>
 <thead><tr id="hr"></tr></thead>
