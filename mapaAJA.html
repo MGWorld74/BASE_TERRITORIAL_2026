@@ -63,11 +63,38 @@
       padding: 8px 14px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.3);
     }
     #voltar:hover { background: #f0f0f0; }
+    .setor-tooltip .info { margin-top: 4px; font-size: 12px; line-height: 1.5; color: #e8e8e8; }
+    .setor-tooltip .info span { color: #9ad1ff; }
+    .info-form { font-size: 13px; min-width: 290px; }
+    .info-form h4 { font-size: 15px; margin-bottom: 8px; }
+    .info-form .linha { display: flex; gap: 6px; margin-bottom: 8px; }
+    .info-form label { flex: 1; display: flex; flex-direction: column; font-size: 11px; font-weight: bold; color: #444; }
+    .info-form input, .info-form select { margin-top: 2px; padding: 4px; font-size: 13px; width: 100%; border: 1px solid #aaa; border-radius: 4px; }
+    .info-form .acoes { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+    .info-form button { padding: 6px 12px; border: 0; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .info-form .salvar { background: #000080; color: #fff; }
+    .info-form .limpar { background: #ddd; }
+    .info-form .msg { font-size: 12px; margin-left: 4px; }
+    #busca {
+      position: absolute; z-index: 1000; left: 170px; top: 10px;
+      background: #fff; padding: 5px 6px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.3);
+      display: flex; align-items: center; gap: 4px;
+    }
+    #busca input { width: 150px; padding: 5px 7px; font-size: 14px; border: 1px solid #aaa; border-radius: 4px; }
+    #busca button { padding: 6px 10px; font-size: 13px; font-weight: bold; border: 0; border-radius: 4px; background: #000080; color: #fff; cursor: pointer; }
+    #buscaMsg { font-size: 12px; color: #c00; max-width: 160px; }
+    #buscaMsg.ok { color: #060; }
+    @media (max-width: 600px) { #busca { top: 58px; left: 10px; } }
   </style>
 </head>
 <body>
 
-  <a id="voltar" href="setoresAJA.html">← Voltar</a>
+  <a id="voltar" href="setorAJA.html">← Voltar</a>
+  <div id="busca">
+    <input id="buscaSetor" type="text" inputmode="numeric" maxlength="15" autocomplete="off" placeholder="Setor ou 4 últimos dígitos">
+    <button id="buscaBtn" type="button">Buscar</button>
+    <span id="buscaMsg"></span>
+  </div>
   <div id="map"></div>
   <div id="aviso">Carregando mapa…</div>
 
@@ -178,9 +205,15 @@
 
       // Número do setor no mouse (somente este setor reage)
       layer.bindTooltip(
-        `Setor ${codigo.slice(0, -4)}<b>${codigo.slice(-4)}</b>`,
+        () => tooltipHtml(codigo),
         { sticky: true, direction: 'auto', className: 'setor-tooltip' }
       );
+      // Botão direito: abre o formulário de dados do setor
+      layer.on('contextmenu', e => {
+        L.DomEvent.preventDefault(e.originalEvent);
+        layer.closeTooltip();
+        abrirFormulario(item, e.latlng);
+      });
       layer.on('mouseover', () => layer.setStyle({ weight: 6, color: '#ffffff' }));
       layer.on('mouseout', () => layer.setStyle(estiloDe(item)));
       layer.addTo(map);
@@ -204,6 +237,145 @@
       const grupo = L.featureGroup(Array.from(setores.values()).map(s => s.layer));
       if (grupo.getBounds().isValid()) map.fitBounds(grupo.getBounds());
     }
+
+    // ===== DADOS DO SETOR (botão direito) =====
+    const MAPA = 'AJA';
+    const infos = new Map();   // código do setor -> dados
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const vazio = v => v === null || v === undefined || v === '';
+
+    function tooltipHtml(codigo) {
+      let h = `Setor ${codigo.slice(0, -4)}<b>${codigo.slice(-4)}</b>`;
+      const d = infos.get(codigo);
+      if (!d) return h;
+      const l1 = [];
+      if (!vazio(d.ano)) l1.push(`<span>Ano:</span> ${d.ano}`);
+      if (!vazio(d.trimestre)) l1.push(`<span>Trimestre:</span> ${d.trimestre}º`);
+      if (!vazio(d.mes)) l1.push(`<span>Mês:</span> ${MESES[d.mes - 1] || d.mes}`);
+      if (!vazio(d.semana)) l1.push(`<span>Semana:</span> ${d.semana}`);
+      const l2 = [];
+      if (!vazio(d.ano_entrada)) l2.push(`<span>Ano de entrada:</span> ${d.ano_entrada}`);
+      if (!vazio(d.trimestre_entrada)) l2.push(`<span>Trim. de entrada:</span> ${d.trimestre_entrada}º`);
+      if (!vazio(d.ano_saida)) l2.push(`<span>Ano de saída:</span> ${d.ano_saida}`);
+      if (!vazio(d.trimestre_saida)) l2.push(`<span>Trim. de saída:</span> ${d.trimestre_saida}º`);
+      if (l1.length || l2.length) {
+        h += '<div class="info">' + [l1.join(' &nbsp;|&nbsp; '), l2.join(' &nbsp;|&nbsp; ')].filter(Boolean).join('<br>') + '</div>';
+      }
+      return h;
+    }
+
+    async function carregarInfos() {
+      try {
+        const { data, error } = await _supabase.from('setor_info').select('*').eq('mapa', MAPA);
+        if (error) throw error;
+        infos.clear();
+        data.forEach(d => infos.set(d.setor, d));
+      } catch (e) {
+        console.warn('Dados dos setores não carregados:', e.message || e);
+      }
+    }
+
+    function selectOpts(opts, first) {
+      return '<option value="">—</option>' + opts.map((t, i) => `<option value="${i + 1}">${t}</option>`).join('');
+    }
+
+    function abrirFormulario(item, latlng) {
+      const codigo = item.codigo;
+      const d = infos.get(codigo) || {};
+      const tri = ['1º', '2º', '3º', '4º'];
+      const el = document.createElement('div');
+      el.className = 'info-form';
+      el.innerHTML = `
+        <h4>Setor ${codigo.slice(0, -4)}<b>${codigo.slice(-4)}</b></h4>
+        <div class="linha">
+          <label>Ano<input type="number" name="ano" min="2000" max="2100"></label>
+          <label>Trimestre<select name="trimestre">${selectOpts(tri)}</select></label>
+          <label>Mês<select name="mes">${selectOpts(MESES)}</select></label>
+          <label>Semana<input type="number" name="semana" min="1" max="53"></label>
+        </div>
+        <div class="linha">
+          <label>Ano de entrada<input type="number" name="ano_entrada" min="2000" max="2100"></label>
+          <label>Trimestre de entrada<select name="trimestre_entrada">${selectOpts(tri)}</select></label>
+          <label>Ano de saída<input type="number" name="ano_saida" min="2000" max="2100"></label>
+          <label>Trimestre de saída<select name="trimestre_saida">${selectOpts(tri)}</select></label>
+        </div>
+        <div class="acoes">
+          <button type="button" class="salvar">Salvar</button>
+          <button type="button" class="limpar">Limpar tudo</button>
+          <span class="msg"></span>
+        </div>`;
+      const campos = ['ano','trimestre','mes','semana','ano_entrada','trimestre_entrada','ano_saida','trimestre_saida'];
+      campos.forEach(c => { const f = el.querySelector(`[name="${c}"]`); if (!vazio(d[c])) f.value = d[c]; });
+      const msg = el.querySelector('.msg');
+
+      el.querySelector('.limpar').onclick = () => campos.forEach(c => { el.querySelector(`[name="${c}"]`).value = ''; });
+      el.querySelector('.salvar').onclick = async () => {
+        const valores = {};
+        campos.forEach(c => { const v = el.querySelector(`[name="${c}"]`).value; valores[c] = v === '' ? null : parseInt(v, 10); });
+        msg.style.color = '#333'; msg.textContent = 'Salvando…';
+        try {
+          if (campos.every(c => valores[c] === null)) {
+            const { error } = await _supabase.from('setor_info').delete().eq('mapa', MAPA).eq('setor', codigo);
+            if (error) throw error;
+            infos.delete(codigo);
+          } else {
+            const linha = Object.assign({ mapa: MAPA, setor: codigo, atualizado_em: new Date().toISOString() }, valores);
+            const { error } = await _supabase.from('setor_info').upsert(linha, { onConflict: 'mapa,setor' });
+            if (error) throw error;
+            infos.set(codigo, linha);
+          }
+          map.closePopup();
+        } catch (e) {
+          msg.style.color = '#c00'; msg.textContent = 'Erro ao salvar: ' + (e.message || e);
+        }
+      };
+      L.DomEvent.disableClickPropagation(el);
+      L.popup({ minWidth: 300, maxWidth: 380, closeOnClick: true })
+        .setLatLng(latlng).setContent(el).openOn(map);
+    }
+
+    // ===== PESQUISA DE SETOR (número completo ou 4 últimos dígitos) =====
+    let destaqueTimer = null, destacados = [];
+    function limparDestaque() {
+      clearTimeout(destaqueTimer);
+      destacados.forEach(it => { it.layer.closeTooltip(); it.layer.setStyle(estiloDe(it)); });
+      destacados = [];
+    }
+    function buscarSetor() {
+      const campo = $('buscaSetor'), msg = $('buscaMsg');
+      const num = campo.value.replace(/\D/g, '');
+      msg.className = ''; msg.textContent = '';
+      if (!num) { msg.textContent = 'Digite o número.'; return; }
+      const alvo = num.length <= 4 ? num.padStart(4, '0') : num;
+      let achados = Array.from(setores.values()).filter(it => it.codigo === alvo);
+      if (!achados.length) achados = Array.from(setores.values()).filter(it => it.codigo.endsWith(alvo));
+      limparDestaque();
+      if (!achados.length) { msg.textContent = 'Setor não encontrado.'; return; }
+      map.closePopup();
+      const grupo = L.featureGroup(achados.map(it => it.layer));
+      map.fitBounds(grupo.getBounds(), { maxZoom: 18, padding: [40, 40] });
+      achados.forEach(it => {
+        it.layer.setStyle({ weight: 7, color: '#00e5ff' });
+        it.layer.bringToFront();
+        it.layer.openTooltip(it.layer.getBounds().getCenter());
+      });
+      destacados = achados;
+      destaqueTimer = setTimeout(limparDestaque, 6000);
+      if (achados.length > 1) { msg.className = 'ok'; msg.textContent = achados.length + ' setores encontrados.'; }
+    }
+    (() => {
+      const campo = $('buscaSetor');
+      const busca = $('busca');
+      L.DomEvent.disableClickPropagation(busca);
+      L.DomEvent.disableScrollPropagation(busca);
+      // só aceita números (digitando, colando ou arrastando texto)
+      campo.addEventListener('keydown', e => {
+        if (e.key.length === 1 && !/\d/.test(e.key) && !e.ctrlKey && !e.metaKey) e.preventDefault();
+      });
+      campo.addEventListener('input', () => { campo.value = campo.value.replace(/\D/g, ''); $('buscaMsg').textContent = ''; });
+      campo.addEventListener('keydown', e => { if (e.key === 'Enter') buscarSetor(); });
+      $('buscaBtn').addEventListener('click', buscarSetor);
+    })();
 
     // ===== Status vindo da planilha =====
     function parseCSV(t) {
@@ -272,7 +444,8 @@
         await carregarKMZ(ARQUIVO_KMZ);
         $('aviso').remove();
         await atualizarStatus();
-        setInterval(() => { if (!document.hidden) atualizarStatus(); }, 30000);
+        await carregarInfos();
+        setInterval(() => { if (!document.hidden) { atualizarStatus(); carregarInfos(); } }, 30000);
         document.addEventListener('visibilitychange', () => { if (!document.hidden) atualizarStatus(); });
       } catch (e) {
         console.error(e);
