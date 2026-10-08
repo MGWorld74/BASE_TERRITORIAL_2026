@@ -211,7 +211,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 
 <script>
 const K=["ok","setor","euv","edoc","tipo","bairro","pri","end","tel","w1","email","obs","apm","risco"];
-const H=["Status","Setor","EUV","EDOC","Tipo","Bairro","Prioridade CNEFE / PNAD","Endereço","Telefone","WhatsApp","E-mail","Observações","APM","Área de Risco"];
+const H=["Status","Setor","EUV","EDOC","Tipo","Bairro","Prioridade CNEFE / PNAD","Endereço (Colocar o endereço principal do Setor)","Telefone","WhatsApp","E-mail","Observações","APM","Área de Risco"];
 const ML=["tel","email","obs"];
 const mk=(s,e,d,b,ok,c)=>Object.assign({setor:s,euv:e,edoc:d,tipo:"0",bairro:b,ok:!!ok,tel:"",w1:"",tel2:"",w2:"",email:"",end:"",apm:"",obs:""},c||{});
 const ct={tel:"(21) 3495-0958",w1:"Sim",tel2:"Não se aplica.",w2:"Não se aplica.",email:"millenioilhapura.adm@gmail.com",end:"Av. Abraham Medina, 355"};
@@ -225,7 +225,7 @@ const EDIT=!!SCRIPT_URL;
 let data=[];
 try{const s=localStorage.getItem("setores_v1");data=s?JSON.parse(s):seed}catch(e){data=seed}
 let local={};try{local=JSON.parse(localStorage.getItem("status_local")||"{}")}catch(e){}
-const hIdx=r0=>K.map((k,i)=>r0.findIndex(h=>{h=h.trim().toLowerCase();return h===H[i].toLowerCase()||(k==="w1"&&h==="tem whatsapp?")||(k==="risco"&&h==="area de risco")}));
+const hIdx=r0=>K.map((k,i)=>r0.findIndex(h=>{h=h.trim().toLowerCase();return h===H[i].toLowerCase()||(k==="w1"&&h==="tem whatsapp?")||(k==="end"&&h==="endereço")||(k==="risco"&&h==="area de risco")}));
 const $=id=>document.getElementById(id);
 const hora=()=>new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 let hold=0,pend=0,fail=0,fsetor="";
