@@ -89,7 +89,7 @@
 </head>
 <body>
 
-  <a id="voltar" href="setorABT.html">← Voltar</a>
+  <a id="voltar" href="setoresABT.html">← Voltar</a>
   <div id="busca">
     <input id="buscaSetor" type="text" inputmode="numeric" maxlength="15" autocomplete="off" placeholder="Setor ou 4 últimos dígitos">
     <button id="buscaBtn" type="button">Buscar</button>
@@ -306,6 +306,13 @@
         </div>`;
       const campos = ['ano','trimestre','mes','semana','ano_entrada','trimestre_entrada','ano_saida','trimestre_saida'];
       campos.forEach(c => { const f = el.querySelector(`[name="${c}"]`); if (!vazio(d[c])) f.value = d[c]; });
+      if (vazio(d.ano)) el.querySelector('[name="ano"]').value = 2027; // padrão, editável
+      // Ano de entrada preenche Ano de saída (+10); saída continua editável e não altera a entrada
+      const fEnt = el.querySelector('[name="ano_entrada"]'), fSai = el.querySelector('[name="ano_saida"]');
+      fEnt.addEventListener('input', () => {
+        const v = fEnt.value.trim();
+        if (/^\d{4}$/.test(v)) fSai.value = parseInt(v, 10) + 10;
+      });
       const msg = el.querySelector('.msg');
 
       el.querySelector('.limpar').onclick = () => campos.forEach(c => { el.querySelector(`[name="${c}"]`).value = ''; });
