@@ -110,6 +110,9 @@
     const OPACIDADE_CONCLUIDO = 0.70;  // 70% (0 = invisível, 1 = sólido)
     const COR_RISCO = "#FF0000";       // vermelho (Área de Risco)
     const OPACIDADE_RISCO = 0.70;      // 70%
+    const COR_CNEFE = "#00A651";       // verde (prioridade CNEFE)
+    const COR_PNAD = "#1E90FF";        // azul (prioridade PNAD)
+    const OPACIDADE_PRIORIDADE = 0.70; // 70%
     const ARQUIVO_KMZ = "ABT.kmz";
 
     const $ = id => document.getElementById(id);
@@ -150,10 +153,20 @@
     const setores = new Map();
     const porFinal4 = new Map();   // 4 últimos dígitos -> [códigos completos]
 
-    function estiloDe(item) {
-      // Área de Risco (vermelho) prevalece sobre Concluído
-      const fundo = item.risco ? { fillColor: COR_RISCO, fillOpacity: OPACIDADE_RISCO }
-                  : item.concluido ? ESTILO_CONCLUIDO : {};
+    function fundoPrioridade(item) {
+      if (item.pri === 'CNEFE') return { fillColor: COR_CNEFE, fillOpacity: OPACIDADE_PRIORIDADE };
+      if (item.pri === 'PNAD')  return { fillColor: COR_PNAD,  fillOpacity: OPACIDADE_PRIORIDADE };
+      return null;
+    }
+    function estiloDe(item, hover) {
+      // Fundo normal: Área de Risco (vermelho) > Concluído (azul marinho) > Prioridade (CNEFE verde / PNAD azul)
+      // Com o mouse em cima: se houver CNEFE/PNAD, o fundo assume a cor da prioridade
+      const prio = fundoPrioridade(item);
+      let fundo;
+      if (hover && prio) fundo = prio;
+      else if (item.risco) fundo = { fillColor: COR_RISCO, fillOpacity: OPACIDADE_RISCO };
+      else if (item.concluido) fundo = ESTILO_CONCLUIDO;
+      else fundo = prio || {};
       return Object.assign({}, ESTILO_NORMAL, { weight: 4, color: '#ffff00' }, fundo);
     }
 
@@ -196,7 +209,7 @@
 
       const layer = L.polygon(polys.length === 1 ? polys[0] : polys,
         Object.assign({ renderer: canvas, interactive: true }, ESTILO_NORMAL));
-      const item = { layer, concluido: false, risco: false, codigo };
+      const item = { layer, concluido: false, risco: false, pri: '', codigo };
       setores.set(codigo, item);
 
       const final4 = dados(pm, 'CD_SETOR') || codigo.slice(-4);
@@ -214,7 +227,7 @@
         layer.closeTooltip();
         abrirFormulario(item, e.latlng);
       });
-      layer.on('mouseover', () => layer.setStyle({ weight: 6, color: '#ffffff' }));
+      layer.on('mouseover', () => layer.setStyle(Object.assign(estiloDe(item, true), { weight: 6, color: '#ffffff' })));
       layer.on('mouseout', () => layer.setStyle(estiloDe(item)));
       layer.addTo(map);
     }
@@ -411,9 +424,10 @@
         const semAcento = h => h.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const iSetor = head.indexOf('setor'), iStatus = head.indexOf('status');
         const iRisco = head.findIndex(h => semAcento(h) === 'area de risco');
+        const iPri = head.findIndex(h => semAcento(h).startsWith('prioridade'));
         if (iSetor < 0 || iStatus < 0) throw new Error('Colunas Setor/Status não encontradas');
 
-        const concluidos = new Set(), riscos = new Set();
+        const concluidos = new Set(), riscos = new Set(), prioridades = new Map();
         const codigosDe = s => {
           if (setores.has(s)) return [s];
           if (s.length <= 4) return porFinal4.get(s.padStart(4, '0')) || [];
@@ -426,13 +440,17 @@
           const risco = iRisco >= 0 && /^(sim|true|1|x|verdadeiro)$/i.test((row[iRisco] || '').trim());
           if (ok) codigosDe(s).forEach(c => concluidos.add(c));
           if (risco) codigosDe(s).forEach(c => riscos.add(c));
+          const pv = iPri >= 0 ? semAcento((row[iPri] || '').trim().toUpperCase()) : '';
+          const pri = pv.includes('CNEFE') ? 'CNEFE' : pv.includes('PNAD') ? 'PNAD' : '';
+          if (pri) codigosDe(s).forEach(c => prioridades.set(c, pri));
         }
 
         setores.forEach((item, codigo) => {
-          const novo = concluidos.has(codigo), novoR = riscos.has(codigo);
-          if (novo !== item.concluido || novoR !== item.risco) {
+          const novo = concluidos.has(codigo), novoR = riscos.has(codigo), novoP = prioridades.get(codigo) || '';
+          if (novo !== item.concluido || novoR !== item.risco || novoP !== item.pri) {
             item.concluido = novo;
             item.risco = novoR;
+            item.pri = novoP;
             item.layer.setStyle(estiloDe(item));
           }
         });
