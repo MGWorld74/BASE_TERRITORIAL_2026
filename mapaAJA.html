@@ -428,7 +428,21 @@
         const semAcento = h => h.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const iSetor = head.indexOf('setor'), iStatus = head.indexOf('status');
         const iRisco = head.findIndex(h => semAcento(h) === 'area de risco');
-        const iPri = head.findIndex(h => semAcento(h).startsWith('prioridade'));
+        let iPri = head.findIndex(h => /prioridade|cnefe|pnad/.test(semAcento(h)));
+        // se o título da coluna não for reconhecido, procura a coluna cujos valores são CNEFE / PNAD
+        if (iPri < 0) {
+          const nCol = Math.max(...rows.map(r => r.length));
+          for (let c = 0; c < nCol && iPri < 0; c++) {
+            if (rows.slice(1).some(r => /^\s*(cnefe|pnad)\s*$/i.test(r[c] || ''))) iPri = c;
+          }
+        }
+        // reserva: prioridades salvas neste navegador pelo setores (caso a planilha não tenha a coluna)
+        let locais = {};
+        if (iPri < 0) {
+          try {
+            JSON.parse(localStorage.getItem('setores_v1') || '[]').forEach(d => { if (d && d.setor && d.pri) locais[String(d.setor).replace(/\D/g, '')] = d.pri; });
+          } catch (e) {}
+        }
         if (iSetor < 0 || iStatus < 0) throw new Error('Colunas Setor/Status não encontradas');
 
         const concluidos = new Set(), riscos = new Set(), prioridades = new Map();
@@ -444,7 +458,7 @@
           const risco = iRisco >= 0 && /^(sim|true|1|x|verdadeiro)$/i.test((row[iRisco] || '').trim());
           if (ok) codigosDe(s).forEach(c => concluidos.add(c));
           if (risco) codigosDe(s).forEach(c => riscos.add(c));
-          const pv = iPri >= 0 ? semAcento((row[iPri] || '').trim().toUpperCase()) : '';
+          const pv = semAcento(String(iPri >= 0 ? (row[iPri] || '') : (locais[s] || '')).trim().toUpperCase());
           const pri = pv.includes('CNEFE') ? 'CNEFE' : pv.includes('PNAD') ? 'PNAD' : '';
           if (pri) codigosDe(s).forEach(c => prioridades.set(c, pri));
         }
