@@ -187,6 +187,7 @@
       if (hover && prio) fundo = prio;
       else if (item.risco) fundo = { fillColor: COR_RISCO, fillOpacity: OPACIDADE_RISCO };
       else if (item.concluido) fundo = ESTILO_CONCLUIDO;
+      else if (item.sel || item.usado) fundo = { fillColor: '#ff6a00', fillOpacity: 0.70 };   // selecionado / já selecionado
       else fundo = prio || {};
       const borda = item.sel ? { weight: 6, color: '#ff6a00' } : { weight: 4, color: '#ffff00' };
       return Object.assign({}, ESTILO_NORMAL, borda, fundo);
@@ -388,14 +389,20 @@
       el.textContent = msg || (selecionados.size + (selecionados.size === 1 ? ' selecionado' : ' selecionados'));
     }
     function alternarSelecao(item) {
-      if (selecionados.has(item.codigo)) { selecionados.delete(item.codigo); item.sel = false; }
+      if (selecionados.has(item.codigo)) { selecionados.delete(item.codigo); item.sel = false; item.usado = false; }
       else { selecionados.set(item.codigo, item); item.sel = true; }
       item.layer.setStyle(estiloDe(item, true));
       if (item.sel) item.layer.bringToFront();
       atualizarContagem();
     }
     function limparSelecao() {
-      selecionados.forEach(it => { it.sel = false; it.layer.setStyle(estiloDe(it)); });
+      selecionados.forEach(it => { it.sel = false; it.usado = false; it.layer.setStyle(estiloDe(it)); });
+      selecionados.clear();
+      atualizarContagem();
+    }
+    // ao sair do modo: os setores selecionados ficam marcados em laranja (já selecionados)
+    function encerrarSelecao() {
+      selecionados.forEach(it => { it.sel = false; it.usado = true; it.layer.setStyle(estiloDe(it)); });
       selecionados.clear();
       atualizarContagem();
     }
@@ -422,7 +429,7 @@
         $('selBtn').textContent = modoSelecao ? 'Sair da seleção' : 'Selecionar Setor';
         painel.classList.toggle('ativo', modoSelecao);
         $('map').classList.toggle('modo-selecao', modoSelecao);
-        if (!modoSelecao) limparSelecao();
+        if (!modoSelecao) encerrarSelecao();
         atualizarContagem();
       });
       $('selCopiar').addEventListener('click', copiarSelecao);
