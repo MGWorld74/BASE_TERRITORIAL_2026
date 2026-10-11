@@ -113,7 +113,7 @@
     <span class="extra">
       <span id="selContagem">0 selecionados</span>
       <button id="selCopiar" type="button">Copiar</button>
-      <button id="selLimpar" type="button" class="sec">Limpar</button>
+      <button id="selLimpar" type="button" class="sec">Limpar tudo</button>
     </span>
   </div>
   <div id="map"></div>
@@ -189,8 +189,7 @@
       else if (item.concluido) fundo = ESTILO_CONCLUIDO;
       else if (item.sel || item.usado) fundo = { fillColor: '#ff6a00', fillOpacity: 0.70 };   // selecionado / já selecionado
       else fundo = prio || {};
-      const borda = item.sel ? { weight: 6, color: '#ff6a00' } : { weight: 4, color: '#ffff00' };
-      return Object.assign({}, ESTILO_NORMAL, borda, fundo);
+      return Object.assign({}, ESTILO_NORMAL, { weight: 4, color: '#ffff00' }, fundo);
     }
 
     // ===== KML (leitura própria, uma camada por setor) =====
@@ -251,7 +250,7 @@
         abrirFormulario(item, e.latlng);
       });
       layer.on('click', () => { if (modoSelecao) alternarSelecao(item); });
-      layer.on('mouseover', () => layer.setStyle(Object.assign(estiloDe(item, true), item.sel ? {} : { weight: 6, color: '#ffffff' })));
+      layer.on('mouseover', () => layer.setStyle(Object.assign(estiloDe(item, true), { weight: 6, color: '#ffffff' })));
       layer.on('mouseout', () => layer.setStyle(estiloDe(item)));
       layer.addTo(map);
     }
@@ -389,14 +388,17 @@
       el.textContent = msg || (selecionados.size + (selecionados.size === 1 ? ' selecionado' : ' selecionados'));
     }
     function alternarSelecao(item) {
-      if (selecionados.has(item.codigo)) { selecionados.delete(item.codigo); item.sel = false; item.usado = false; }
+      // clicar num setor já selecionado (borda laranja) ou já marcado (fundo laranja) desmarca com 1 clique
+      if (item.sel || item.usado) { selecionados.delete(item.codigo); item.sel = false; item.usado = false; }
       else { selecionados.set(item.codigo, item); item.sel = true; }
       item.layer.setStyle(estiloDe(item, true));
       if (item.sel) item.layer.bringToFront();
       atualizarContagem();
     }
     function limparSelecao() {
-      selecionados.forEach(it => { it.sel = false; it.usado = false; it.layer.setStyle(estiloDe(it)); });
+      const marcados = Array.from(setores.values()).filter(it => it.sel || it.usado);
+      if (marcados.length > 1 && !confirm('Remover a marcação laranja de ' + marcados.length + ' setores?')) return;
+      marcados.forEach(it => { it.sel = false; it.usado = false; it.layer.setStyle(estiloDe(it)); });
       selecionados.clear();
       atualizarContagem();
     }
