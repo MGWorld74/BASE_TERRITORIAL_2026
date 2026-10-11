@@ -84,7 +84,20 @@
     #busca button { padding: 6px 10px; font-size: 13px; font-weight: bold; border: 0; border-radius: 4px; background: #000080; color: #fff; cursor: pointer; }
     #buscaMsg { font-size: 12px; color: #c00; max-width: 160px; }
     #buscaMsg.ok { color: #060; }
-    @media (max-width: 600px) { #busca { top: 58px; left: 10px; } }
+    #selecao {
+      position: absolute; z-index: 1000; right: 60px; top: 10px;
+      background: #fff; padding: 5px 6px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.3);
+      display: flex; align-items: center; gap: 4px;
+    }
+    #selecao button { padding: 6px 10px; font-size: 13px; font-weight: bold; border: 0; border-radius: 4px; background: #000080; color: #fff; cursor: pointer; }
+    #selecao button.ativo { background: #ff6a00; }
+    #selecao button.sec { background: #ddd; color: #222; }
+    #selecao .extra { display: none; align-items: center; gap: 4px; }
+    #selecao.ativo .extra { display: flex; }
+    #selContagem { font-size: 12px; color: #333; min-width: 82px; }
+    #selContagem.ok { color: #060; font-weight: bold; }
+    #map.modo-selecao .leaflet-interactive { cursor: pointer; }
+    @media (max-width: 600px) { #busca { top: 58px; left: 10px; } #selecao { top: 106px; right: auto; left: 10px; } }
   </style>
 </head>
 <body>
@@ -94,6 +107,14 @@
     <input id="buscaSetor" type="text" inputmode="numeric" maxlength="15" autocomplete="off" placeholder="Setor ou 4 últimos dígitos">
     <button id="buscaBtn" type="button">Buscar</button>
     <span id="buscaMsg"></span>
+  </div>
+  <div id="selecao">
+    <button id="selBtn" type="button">Selecionar Setor</button>
+    <span class="extra">
+      <span id="selContagem">0 selecionados</span>
+      <button id="selCopiar" type="button">Copiar</button>
+      <button id="selLimpar" type="button" class="sec">Limpar</button>
+    </span>
   </div>
   <div id="map"></div>
   <div id="aviso">Carregando mapa…</div>
@@ -167,7 +188,8 @@
       else if (item.risco) fundo = { fillColor: COR_RISCO, fillOpacity: OPACIDADE_RISCO };
       else if (item.concluido) fundo = ESTILO_CONCLUIDO;
       else fundo = prio || {};
-      return Object.assign({}, ESTILO_NORMAL, { weight: 4, color: '#ffff00' }, fundo);
+      const borda = item.sel ? { weight: 6, color: '#ff6a00' } : { weight: 4, color: '#ffff00' };
+      return Object.assign({}, ESTILO_NORMAL, borda, fundo);
     }
 
     // ===== KML (leitura própria, uma camada por setor) =====
@@ -227,7 +249,8 @@
         layer.closeTooltip();
         abrirFormulario(item, e.latlng);
       });
-      layer.on('mouseover', () => layer.setStyle(Object.assign(estiloDe(item, true), { weight: 6, color: '#ffffff' })));
+      layer.on('click', () => { if (modoSelecao) alternarSelecao(item); });
+      layer.on('mouseover', () => layer.setStyle(Object.assign(estiloDe(item, true), item.sel ? {} : { weight: 6, color: '#ffffff' })));
       layer.on('mouseout', () => layer.setStyle(estiloDe(item)));
       layer.addTo(map);
     }
@@ -353,6 +376,58 @@
       L.popup({ minWidth: 300, maxWidth: 380, closeOnClick: true })
         .setLatLng(latlng).setContent(el).openOn(map);
     }
+
+    // ===== SELECIONAR SETOR (clicar nos setores e copiar os números) =====
+    const SEPARADOR_COPIA = '\n';   // separador dos números copiados ('\n' = um por linha; troque por ', ' para uma linha só)
+    let modoSelecao = false;
+    const selecionados = new Map();   // código -> item (na ordem em que foram clicados)
+
+    function atualizarContagem(msg) {
+      const el = $('selContagem');
+      el.className = msg ? 'ok' : '';
+      el.textContent = msg || (selecionados.size + (selecionados.size === 1 ? ' selecionado' : ' selecionados'));
+    }
+    function alternarSelecao(item) {
+      if (selecionados.has(item.codigo)) { selecionados.delete(item.codigo); item.sel = false; }
+      else { selecionados.set(item.codigo, item); item.sel = true; }
+      item.layer.setStyle(estiloDe(item, true));
+      if (item.sel) item.layer.bringToFront();
+      atualizarContagem();
+    }
+    function limparSelecao() {
+      selecionados.forEach(it => { it.sel = false; it.layer.setStyle(estiloDe(it)); });
+      selecionados.clear();
+      atualizarContagem();
+    }
+    async function copiarSelecao() {
+      if (!selecionados.size) { atualizarContagem('Nenhum setor'); setTimeout(() => atualizarContagem(), 1500); return; }
+      const texto = Array.from(selecionados.keys()).join(SEPARADOR_COPIA);
+      try {
+        await navigator.clipboard.writeText(texto);
+      } catch (e) {
+        const ta = document.createElement('textarea');
+        ta.value = texto; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      atualizarContagem('Copiado!');
+      setTimeout(() => atualizarContagem(), 1500);
+    }
+    (() => {
+      const painel = $('selecao');
+      L.DomEvent.disableClickPropagation(painel);
+      L.DomEvent.disableScrollPropagation(painel);
+      $('selBtn').addEventListener('click', () => {
+        modoSelecao = !modoSelecao;
+        $('selBtn').classList.toggle('ativo', modoSelecao);
+        $('selBtn').textContent = modoSelecao ? 'Sair da seleção' : 'Selecionar Setor';
+        painel.classList.toggle('ativo', modoSelecao);
+        $('map').classList.toggle('modo-selecao', modoSelecao);
+        if (!modoSelecao) limparSelecao();
+        atualizarContagem();
+      });
+      $('selCopiar').addEventListener('click', copiarSelecao);
+      $('selLimpar').addEventListener('click', limparSelecao);
+    })();
 
     // ===== PESQUISA DE SETOR (número completo ou 4 últimos dígitos) =====
     let destaqueTimer = null, destacados = [];
