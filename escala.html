@@ -9,8 +9,11 @@
 <style>
 *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 body{font:14px "Segoe UI",Arial,sans-serif;margin:0;padding:20px;min-height:100vh;box-sizing:border-box;color:#111;text-align:center;
-  background:#cfd8e3 url('background.png') center/100% 100% no-repeat fixed}
-.painel{background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.4);padding:22px;width:fit-content;max-width:100%;margin:0 auto}
+  display:flex;justify-content:center;align-items:center;
+  background-color:#e6ecf3;
+  background-image:linear-gradient(rgba(255,255,255,.5),rgba(255,255,255,.5)),url('background.png');
+  background-size:100% 100%;background-position:center;background-repeat:no-repeat;background-attachment:fixed}
+.painel{background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.4);padding:22px;width:fit-content;max-width:100%;min-width:0;margin:0 auto}
 button{font:inherit;cursor:pointer}
 .bar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:10px}
 .bar input,.bar select{padding:6px 8px;border:1px solid #888;border-radius:3px;font:inherit}
@@ -51,7 +54,7 @@ td input:focus,td select:focus{outline:2px solid #1d4e89}
 #menu button.d{color:#b00020}
 @page{size:A4 landscape;margin:10mm}
 @media print{
-  body{padding:0;min-height:0;background:none!important}
+  body{display:block;padding:0;min-height:0;background:none!important}
   .painel{background:none;box-shadow:none;padding:0;width:auto}
   .bar,.dias,.hint,#menu{display:none!important}
   .wrap{overflow:visible}
