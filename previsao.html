@@ -87,7 +87,8 @@ h1 { color: var(--primary); text-align: center; margin: 10px 0 6px; }
 
     <div class="grid" id="grid"></div>
 
-    <p class="nota">A previsão conta apenas dias úteis (segunda a sexta), a partir de hoje, e não desconta feriados. Os valores de APMs e meta ficam salvos neste navegador.</p>
+    <p class="nota">A previsão conta apenas dias úteis (segunda a sexta), a partir de hoje, e não desconta feriados.</p>
+    <p class="nota" id="status-cfg" style="margin-top:6px"></p>
 </div>
 
 <script>
@@ -128,11 +129,37 @@ $('grid').innerHTML = Object.entries(AGENCIAS).map(([k, a]) => `
 </div>`).join('');
 
 Object.keys(AGENCIAS).forEach(k => ['apms', 'meta'].forEach(c => {
-    $(`${k}-${c}`).addEventListener('input', () => { salvarCfg(); calcular(k); });
+    $(`${k}-${c}`).addEventListener('input', () => { salvarCfg(k); calcular(k); });
 }));
 
-function salvarCfg() {
-    Object.keys(AGENCIAS).forEach(k => cfg[k] = { apms: $(`${k}-apms`).value, meta: $(`${k}-meta`).value });
+// Valores de APMs e meta ficam na tabela public.previsao_cfg do Supabase (compartilhados entre navegadores);
+// o localStorage é só cópia de reserva caso o Supabase fique indisponível.
+const timers = {};
+function salvarCfg(k) {
+    Object.keys(AGENCIAS).forEach(x => cfg[x] = { apms: $(`${x}-apms`).value, meta: $(`${x}-meta`).value });
+    try { localStorage.setItem(STORE_CFG, JSON.stringify(cfg)); } catch (e) {}
+    $('status-cfg').textContent = 'Salvando…';
+    clearTimeout(timers[k]);
+    timers[k] = setTimeout(async () => {
+        const { error } = await _supabase.from('previsao_cfg').upsert({
+            agencia: AGENCIAS[k].nome,
+            apms: Math.max(0, parseInt($(`${k}-apms`).value, 10) || 0),
+            meta: Math.max(0, parseInt($(`${k}-meta`).value, 10) || 0),
+            atualizado_em: new Date().toISOString()
+        });
+        $('status-cfg').textContent = error ? 'Não foi possível salvar para os outros usuários: ' + error.message : 'Salvo para todos os usuários';
+    }, 600);
+}
+
+async function carregarCfg() {
+    const { data, error } = await _supabase.from('previsao_cfg').select('agencia, apms, meta');
+    if (error || !data) return;
+    data.forEach(row => {
+        const k = Object.keys(AGENCIAS).find(x => AGENCIAS[x].nome === row.agencia);
+        if (!k) return;
+        ['apms', 'meta'].forEach(c => { if (document.activeElement !== $(`${k}-${c}`)) $(`${k}-${c}`).value = row[c]; });
+        cfg[k] = { apms: String(row.apms), meta: String(row.meta) };
+    });
     try { localStorage.setItem(STORE_CFG, JSON.stringify(cfg)); } catch (e) {}
 }
 
@@ -176,7 +203,7 @@ function calcular(k) {
     const semanas = pend / cap;
     const diasUteis = Math.ceil(semanas * 5);
     $(`${k}-sem`).textContent = `${semanas.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} semanas (${fmtInt(diasUteis)} dias úteis)`;
-    $(`${k}-data`).textContent = somaDiasUteis(diasUteis).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    $(`${k}-data`).textContent = somaDiasUteis(diasUteis).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 async function lerPlanilha(a) {
@@ -195,6 +222,7 @@ async function carregar() {
     const btn = $('btn-atualizar'); btn.disabled = true;
     $('sync').textContent = 'Lendo as planilhas…';
     let falhas = [];
+    await carregarCfg();
     for (const [k, a] of Object.entries(AGENCIAS)) {
         try { dados[k] = await lerPlanilha(a); } catch (e) { falhas.push(a.nome); }
     }
