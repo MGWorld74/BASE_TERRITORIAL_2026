@@ -72,6 +72,7 @@ h1 { color: var(--primary); text-align: center; margin: 10px 0 6px; }
 .results div { margin-bottom: 8px; }
 .results div:last-child { margin-bottom: 0; }
 .highlight { font-weight: bold; color: var(--accent); }
+.highlight .mes { font-weight: normal; font-size: 0.8rem; color: var(--mut); margin-left: 4px; }
 .nota { color: var(--mut); font-size: 0.8rem; text-align: center; margin-top: 20px; }
 </style>
 </head>
@@ -203,7 +204,9 @@ function calcular(k) {
     const semanas = pend / cap;
     const diasUteis = Math.ceil(semanas * 5);
     $(`${k}-sem`).textContent = `${semanas.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} semanas (${fmtInt(diasUteis)} dias úteis)`;
-    $(`${k}-data`).textContent = somaDiasUteis(diasUteis).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const dt = somaDiasUteis(diasUteis);
+    $(`${k}-data`).innerHTML = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        + ` <span class="mes">(${dt.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })})</span>`;
 }
 
 async function lerPlanilha(a) {
