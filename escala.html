@@ -13,7 +13,7 @@ body{font:14px "Segoe UI",Arial,sans-serif;margin:0;padding:20px;min-height:100v
   background-color:#e6ecf3;
   background-image:linear-gradient(rgba(255,255,255,.62),rgba(255,255,255,.62)),url('background.png');
   background-size:100% 100%;background-position:center;background-repeat:no-repeat;background-attachment:fixed}
-.painel{background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 10px 36px rgba(0,0,0,.7);padding:22px;width:fit-content;max-width:100%;min-width:0;margin:0 auto}
+.painel{background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 10px 36px rgba(0,0,0,.7);padding:22px;width:fit-content;max-width:100%;min-width:0;margin:0 auto;display:flex;flex-direction:column;max-height:calc(100vh - 40px)}
 button{font:inherit;cursor:pointer}
 .bar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:10px}
 .bar input,.bar select{padding:6px 8px;border:1px solid #888;border-radius:3px;font:inherit}
@@ -27,11 +27,11 @@ a.btn{color:inherit;text-decoration:none;display:inline-block}
 .dias button.zero b{color:#b00020}
 .dias button.on.zero b{color:#ffd0d6}
 .hint{margin:0 0 12px;color:#555;font-size:.88rem;min-height:1.2em}
-.wrap{overflow-x:auto}
+.wrap{flex:1;min-height:0;overflow:auto}
 table{border-collapse:collapse;margin:0 auto;width:auto;font-size:14px}
 th,td{border:1px solid #222;padding:4px 10px;vertical-align:middle;white-space:nowrap;text-align:center}
 th{background:#0b2545;color:#fff;font-weight:700;padding:7px 10px;border-color:#0b2545}
-th.s{cursor:pointer;user-select:none}
+th.s{cursor:pointer;user-select:none;position:sticky;top:0;z-index:2}
 th.s:hover{background:#13315c}
 th.titulo{background:#1d4e89;border-color:#1d4e89;padding:20px 12px;cursor:default}
 .t1{font-size:1.6rem;font-weight:700}
@@ -55,9 +55,10 @@ td input:focus,td select:focus{outline:2px solid #1d4e89}
 @page{size:A4 landscape;margin:10mm}
 @media print{
   body{display:block;padding:0;min-height:0;background:none!important}
-  .painel{background:none;box-shadow:none;padding:0;width:auto}
+  .painel{display:block;max-height:none;background:none;box-shadow:none;padding:0;width:auto}
   .bar,.dias,.hint,#menu{display:none!important}
-  .wrap{overflow:visible}
+  .wrap{overflow:visible;max-height:none}
+  th.s{position:static}
   table{zoom:.85}
   tbody tr:hover td{filter:none}
 }
