@@ -214,7 +214,7 @@ function render(){
   const a=apms.find(x=>x.id===editId);
   $("ht").textContent=a?`Editando ${a.nome||"novo servidor"}. Clique fora da linha ou pressione Esc para concluir.`
     :modoLocal?"Modo local sem login: somente leitura."
-    :podeEditar?"Tabelas travadas. Clique com o botão direito do mouse para editar, excluir ou adicionar servidores (na tabela de cima, também para escolher o APM de cada dia)."
+    :podeEditar?"Clique com o botão direito do mouse para editar, excluir ou adicionar servidores."
     :"Somente leitura: sua conta não tem permissão para editar a escala.";
   render2();ajusta();
 }
