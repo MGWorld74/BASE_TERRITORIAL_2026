@@ -42,8 +42,14 @@ a.btn{color:inherit;text-decoration:none;display:inline-block}
 table{border-collapse:collapse;margin:0 auto;flex:none;width:auto;font-size:14px}
 .duas{display:flex;flex-direction:column;gap:14px;align-items:center;flex:none;width:max-content}
 .duas table{margin:0}
-#t2 th{padding:5px 10px}
-#t2 td{text-align:left;min-width:190px}
+#t2 th{padding:5px 10px;border:0;border-left:1px solid rgba(255,255,255,.5)}
+#t2 th:first-child{border-left:0}
+#t2 td{text-align:left;min-width:190px;border:0;border-top:1px solid #dbe2ea;border-left:2px solid #9db0c6}
+#t2 td:first-child{border-left:1px solid #0b2545}
+#t2 td:last-child{border-right:1px solid #0b2545}
+#t2 tbody tr:last-child td{border-bottom:1px solid #0b2545}
+#t2 td.f{box-shadow:inset 0 0 0 2px #fff}
+#t2 td.f.fd{box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 9999px rgba(255,255,255,.35)}
 #t2 select{width:100%;font:inherit;padding:2px;margin:0}
 .sw{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.3)}
 .cf{display:inline-block;margin-top:4px;font-size:.85em;white-space:nowrap}
@@ -89,7 +95,7 @@ td input:focus,td select:focus{outline:2px solid #1d4e89}
 <body>
 <div class="painel">
 <div class="faixa">
-  <div class="fl"><a class="btn" href="index.html">← Voltar</a></div>
+  <div class="fl"><a class="btn" id="voltar" href="index.html">← Voltar</a></div>
   <div class="fc"><div class="t1">Escala de Servidores</div><div class="t2">BASE TERRITORIAL - ABT / AJA</div></div>
   <div class="tr">
   <a class="zap" href="https://chat.whatsapp.com/Fxcj72rtMYo9VmtiJw24V8" target="_blank" rel="noopener" title="Entrar no grupo do WhatsApp" aria-label="Entrar no grupo do WhatsApp">
@@ -214,7 +220,7 @@ function render(){
   const a=apms.find(x=>x.id===editId);
   $("ht").textContent=a?`Editando ${a.nome||"novo servidor"}. Clique fora da linha ou pressione Esc para concluir.`
     :modoLocal?"Modo local sem login: somente leitura."
-    :podeEditar?"Clique com o botão direito do mouse para editar, excluir ou adicionar servidores."
+    :podeEditar?"Tabelas travadas. Clique com o botão direito do mouse para editar, excluir ou adicionar servidores (na tabela de cima, também para escolher o APM de cada dia)."
     :"Somente leitura: sua conta não tem permissão para editar a escala.";
   render2();ajusta();
 }
@@ -226,7 +232,7 @@ function render2(){
   $("h2").innerHTML=DIAS.map(d=>`<th${filtroDia===d?' class="fd"':""}>${d}</th>`).join("");
   let h="";
   for(let i=0;i<n;i++)h+="<tr>"+DIAS.map((d,j)=>{const a=col[j][i];
-    return`<td data-d="${d}" data-i="${i}"${a?` data-id="${a.id}"`:""}${filtroDia===d?' class="fd"':""}${a?` style="background:${a.cor};color:${txt(a.cor)}"`:""}>${a?esc(a.nome||"(sem nome)"):""}</td>`}).join("")+"</tr>";
+    return`<td data-d="${d}" data-i="${i}"${a?` data-id="${a.id}"`:""} class="${a?"f ":""}${filtroDia===d?"fd":""}"${a?` style="background:${a.cor};color:${txt(a.cor)}"`:""}>${a?esc(a.nome||"(sem nome)"):""}</td>`}).join("")+"</tr>";
   $("tb2").innerHTML=h;
 }
 /* Transforma a célula da tabela 2 numa lista com todos os APMs da tabela 1 */
@@ -313,6 +319,14 @@ document.addEventListener("click",e=>{
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){menu.style.display="none";endEdit();render2()}});
 addEventListener("scroll",()=>menu.style.display="none",true);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&!editId&&!modoLocal)carregar()});
+
+/* Voltar: retorna à página que já estava aberta (não abre outra cópia) */
+$("voltar").addEventListener("click",e=>{
+  e.preventDefault();
+  if(history.length>1){history.back();return}
+  window.close();
+  setTimeout(()=>{let r="";try{const u=new URL(document.referrer);if(u.origin===location.origin)r=u.href}catch(_){}location.href=r||"index.html"},400);
+});
 
 /* Início: login obrigatório, permissões e dados */
 (async()=>{
