@@ -8,12 +8,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{font:14px "Segoe UI",Arial,sans-serif;margin:0;padding:20px;min-height:100vh;box-sizing:border-box;color:#111;text-align:center;
+html,body{height:100%}
+body{font:14px "Segoe UI",Arial,sans-serif;margin:0;padding:20px;height:100vh;height:100dvh;overflow:hidden;box-sizing:border-box;color:#111;text-align:center;
   display:flex;justify-content:center;align-items:center;
   background-color:#e6ecf3;
   background-image:linear-gradient(rgba(255,255,255,.62),rgba(255,255,255,.62)),url('background.png');
   background-size:100% 100%;background-position:center;background-repeat:no-repeat;background-attachment:fixed}
-.painel{background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 10px 36px rgba(0,0,0,.7);padding:22px;width:fit-content;max-width:100%;min-width:0;margin:0 auto;display:flex;flex-direction:column;max-height:calc(100vh - 40px)}
+.painel{background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 10px 36px rgba(0,0,0,.7);padding:22px;width:fit-content;max-width:100%;min-width:0;margin:0 auto;display:flex;flex-direction:column;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px)}
 button{font:inherit;cursor:pointer}
 .bar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:10px}
 .bar input,.bar select{padding:6px 8px;border:1px solid #888;border-radius:3px;font:inherit}
@@ -27,8 +28,8 @@ a.btn{color:inherit;text-decoration:none;display:inline-block}
 .dias button.zero b{color:#b00020}
 .dias button.on.zero b{color:#ffd0d6}
 .hint{margin:0 0 12px;color:#555;font-size:.88rem;min-height:1.2em}
-.wrap{flex:1;min-height:0;overflow:auto}
-table{border-collapse:collapse;margin:0 auto;width:auto;font-size:14px}
+.wrap{flex:1;min-height:0;overflow:auto;display:flex;justify-content:center;align-items:flex-start}
+table{border-collapse:collapse;margin:0 auto;flex:none;width:auto;font-size:14px}
 th,td{border:1px solid #222;padding:4px 10px;vertical-align:middle;white-space:nowrap;text-align:center}
 th{background:#0b2545;color:#fff;font-weight:700;padding:7px 10px;border-color:#0b2545}
 th.s{cursor:pointer;user-select:none;position:sticky;top:0;z-index:2}
@@ -54,7 +55,8 @@ td input:focus,td select:focus{outline:2px solid #1d4e89}
 #menu button.d{color:#b00020}
 @page{size:A4 landscape;margin:10mm}
 @media print{
-  body{display:block;padding:0;min-height:0;background:none!important}
+  html,body{height:auto}
+  body{display:block;padding:0;min-height:0;height:auto;overflow:visible;background:none!important}
   .painel{display:block;max-height:none;background:none;box-shadow:none;padding:0;width:auto}
   .bar,.dias,.hint,#menu{display:none!important}
   .wrap{overflow:visible;max-height:none}
@@ -77,8 +79,8 @@ td input:focus,td select:focus{outline:2px solid #1d4e89}
 <div class="wrap">
 <table>
 <thead>
-<tr><th colspan="5" class="titulo"><div class="t1">Escala de Servidores</div><div class="t2">BASE TERRITORIAL</div></th></tr>
-<tr><th class="s" data-c="ag" data-l="Agência">Agência</th><th class="s" data-c="nome" data-l="APM">APM</th><th class="s" data-c="email" data-l="e-mail">e-mail</th><th class="s" data-c="siape" data-l="SIAPE">SIAPE</th><th class="s" data-c="dias" data-l="Dia Agência">Dia Agência</th></tr>
+<tr><th colspan="6" class="titulo"><div class="t1">Escala de Servidores</div><div class="t2">BASE TERRITORIAL</div></th></tr>
+<tr><th class="s" data-c="ag" data-l="Agência">Agência</th><th class="s" data-c="nome" data-l="APM">APM</th><th class="s" data-c="email" data-l="e-mail">e-mail</th><th class="s" data-c="contato" data-l="Contato">Contato</th><th class="s" data-c="siape" data-l="SIAPE">SIAPE</th><th class="s" data-c="dias" data-l="Dia Agência">Dia Agência</th></tr>
 </thead>
 <tbody id="tb"></tbody>
 </table>
@@ -114,10 +116,11 @@ const $=id=>document.getElementById(id),tb=$("tb"),menu=$("menu");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const opts=(arr,cur)=>arr.map(v=>`<option${v===cur?" selected":""}>${esc(v)}</option>`).join("");
 const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const fone=v=>{const d=String(v||"").replace(/\D/g,"").slice(0,11);if(!d)return"";let t="("+d.slice(0,2);if(d.length>2)t+=") "+d.slice(2,7);if(d.length>7)t+="-"+d.slice(7);return t};
 const sz=v=>Math.max(8,String(v||"").length+1);
 const ordem=l=>[...l].sort((x,y)=>DIAS.indexOf(x)-DIAS.indexOf(y));
 const st=t=>$("st").textContent=t;
-const normaliza=l=>(Array.isArray(l)?l:[]).map(a=>({id:a.id||uid(),ag:a.ag==="ABT"?"ABT":"AJA",nome:a.nome||"",email:a.email||"",siape:String(a.siape||""),dias:ordem(Array.isArray(a.dias)?a.dias:(a.dia?[a.dia]:[]))}));
+const normaliza=l=>(Array.isArray(l)?l:[]).map(a=>({id:a.id||uid(),ag:a.ag==="ABT"?"ABT":"AJA",nome:a.nome||"",email:a.email||"",contato:fone(a.contato),siape:String(a.siape||""),dias:ordem(Array.isArray(a.dias)?a.dias:(a.dia?[a.dia]:[]))}));
 function semente(){try{const l=JSON.parse(localStorage.getItem("escala_v3"));if(Array.isArray(l)&&l.length)return normaliza(l)}catch(e){}return normaliza(SEED.map(r=>P(...r)))}
 
 /* Dados no Supabase */
@@ -163,9 +166,9 @@ function render(){
     const dias=a.dias.map(d=>`<div class="b"><span>${d}</span>${ed?`<button title="Remover dia" data-rmd="${d}">×</button>`:""}</div>`).join("");
     return`<tr class="${a.ag}${ed?" ed":""}" data-id="${a.id}">
 <td>${ed?`<select data-f="ag" style="margin:0">${opts(["AJA","ABT"],a.ag)}</select>`:esc(a.ag)}</td>
-<td>${cell("nome",a.nome)}</td><td>${cell("email",a.email)}</td><td>${cell("siape",a.siape)}</td>
+<td>${cell("nome",a.nome)}</td><td>${cell("email",a.email)}</td><td>${ed?`<input data-f="contato" inputmode="tel" maxlength="15" size="16" placeholder="(##) #####-####" value="${esc(a.contato)}">`:esc(a.contato)}</td><td>${cell("siape",a.siape)}</td>
 <td>${dias}${ed&&dl.length?`<select data-f="addd"><option value="">+ adicionar dia</option>${opts(dl)}</select>`:""}</td></tr>`}).join("")
-    :`<tr><td colspan="5">Nenhum servidor encontrado.</td></tr>`;
+    :`<tr><td colspan="6">Nenhum servidor encontrado.</td></tr>`;
   const base=filtrados(false);
   $("dias").innerHTML=DIAS.map(d=>{const n=base.filter(a=>a.dias.includes(d)).length;
     return`<button data-d="${d}" class="${filtroDia===d?"on":""}${n?"":" zero"}" title="Filtrar por este dia">${d.split("-")[0]} <b>${n}</b></button>`}).join("");
@@ -186,16 +189,17 @@ document.querySelector("thead").onclick=e=>{const c=e.target.dataset.c;if(!c)ret
 async function endEdit(){
   if(!editId)return;
   const a=apms.find(x=>x.id===editId),id=editId;editId=null;
-  if(a&&!a.nome&&!a.email&&!a.siape){apms=apms.filter(x=>x!==a);if(!novos.has(id))await salvar()}
+  if(a&&!a.nome&&!a.email&&!a.contato&&!a.siape){apms=apms.filter(x=>x!==a);if(!novos.has(id))await salvar()}
   novos.delete(id);render();
 }
 function abrir(id){editId=id;render();const i=tb.querySelector("tr.ed input[data-f=nome]");if(i)i.focus()}
 const find=el=>apms.find(a=>a.id===el.closest("tr").dataset.id);
-tb.addEventListener("input",e=>{if(e.target.tagName==="INPUT")e.target.size=sz(e.target.value)});
+tb.addEventListener("input",e=>{const t=e.target;if(t.tagName!=="INPUT")return;if(t.dataset.f==="contato"){t.value=fone(t.value);return}t.size=sz(t.value)});
 tb.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.tagName==="INPUT"){e.target.blur();endEdit()}});
 tb.addEventListener("change",async e=>{
   const f=e.target.dataset.f;if(!f)return;const a=find(e.target),v=e.target.value;
-  if(f==="addd"){if(v&&!a.dias.includes(v))a.dias=ordem([...a.dias,v])}else a[f]=v.trim();
+  if(f==="contato"){const d=v.replace(/\D/g,"");if(d.length&&d.length!==11){alert("Informe o telefone completo no formato (##) #####-####, somente números.");e.target.value=a.contato;return}a.contato=fone(v)}
+  else if(f==="addd"){if(v&&!a.dias.includes(v))a.dias=ordem([...a.dias,v])}else a[f]=v.trim();
   if(await salvar())novos.delete(a.id);
   if(f==="addd"||f==="ag")render();
 });
@@ -219,7 +223,7 @@ menu.addEventListener("click",async e=>{
   if(act==="edit"){if(apms.some(x=>x.id===id))abrir(id)}
   else if(act==="del"){const a=apms.find(x=>x.id===id);
     if(a&&confirm("Excluir "+(a.nome||"este servidor")+" da escala?")){apms=apms.filter(x=>x!==a);await salvar();render()}}
-  else if(act==="add"){const n={id:uid(),ag:"AJA",nome:"",email:"",siape:"",dias:[]};apms.push(n);novos.add(n.id);abrir(n.id)}
+  else if(act==="add"){const n={id:uid(),ag:"AJA",nome:"",email:"",contato:"",siape:"",dias:[]};apms.push(n);novos.add(n.id);abrir(n.id)}
 });
 document.addEventListener("click",e=>{
   if(!e.target.closest("#menu"))menu.style.display="none";
@@ -236,12 +240,12 @@ $("xls").onclick=async()=>{
   await endEdit();
   const cor={AJA:"#EAF3FC",ABT:"#FDF1DC"},br=l=>l.map(esc).join('<br style="mso-data-placement:same-cell">');
   const rows=ordenados(filtrados(true)).map(a=>{const s=`style="background:${cor[a.ag]}"`;
-    return`<tr><td ${s}>${esc(a.ag)}</td><td ${s}>${esc(a.nome)}</td><td ${s}>${esc(a.email)}</td><td ${s}>${esc(a.siape)}</td><td ${s}>${br(a.dias)}</td></tr>`}).join("");
+    return`<tr><td ${s}>${esc(a.ag)}</td><td ${s}>${esc(a.nome)}</td><td ${s}>${esc(a.email)}</td><td ${s}>${esc(a.contato)}</td><td ${s}>${esc(a.siape)}</td><td ${s}>${br(a.dias)}</td></tr>`}).join("");
   const html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>td,th{border:.5pt solid #222;text-align:center;vertical-align:middle;mso-number-format:"\\@"}</style></head><body><table>
-<tr><th colspan="5" style="background:#1d4e89;color:#fff;font-size:18pt;height:40pt">Escala de Servidores</th></tr>
-<tr><th colspan="5" style="background:#1d4e89;color:#fff;letter-spacing:2pt">BASE TERRITORIAL</th></tr>
-<tr>${["Agência","APM","e-mail","SIAPE","Dia Agência"].map(h=>`<th style="background:#0b2545;color:#fff">${h}</th>`).join("")}</tr>${rows}
-<tr><td colspan="5" style="border:0;text-align:right;font-size:9pt">${esc(quando())}</td></tr></table></body></html>`;
+<tr><th colspan="6" style="background:#1d4e89;color:#fff;font-size:18pt;height:40pt">Escala de Servidores</th></tr>
+<tr><th colspan="6" style="background:#1d4e89;color:#fff;letter-spacing:2pt">BASE TERRITORIAL</th></tr>
+<tr>${["Agência","APM","e-mail","Contato","SIAPE","Dia Agência"].map(h=>`<th style="background:#0b2545;color:#fff">${h}</th>`).join("")}</tr>${rows}
+<tr><td colspan="6" style="border:0;text-align:right;font-size:9pt">${esc(quando())}</td></tr></table></body></html>`;
   baixar("\ufeff"+html,"application/vnd.ms-excel;charset=utf-8","escala-servidores.xls");
 };
 
