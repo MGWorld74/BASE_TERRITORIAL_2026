@@ -14,28 +14,28 @@ body{font:14px "Segoe UI",Arial,sans-serif;margin:0;padding:20px;height:100vh;he
   background-color:#e6ecf3;
   background-image:linear-gradient(rgba(255,255,255,.62),rgba(255,255,255,.62)),url('background.png');
   background-size:100% 100%;background-position:center;background-repeat:no-repeat;background-attachment:fixed}
-.painel{background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 10px 36px rgba(0,0,0,.7);padding:22px;width:fit-content;max-width:100%;min-width:0;margin:0 auto;display:flex;flex-direction:column;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px)}
+.painel{background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 10px 36px rgba(0,0,0,.7);padding:14px 18px;width:fit-content;max-width:100%;min-width:0;margin:0 auto;display:flex;flex-direction:column;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px)}
 button{font:inherit;cursor:pointer}
-.bar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:10px}
+.bar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:6px}
 .bar input,.bar select{padding:6px 8px;border:1px solid #888;border-radius:3px;font:inherit}
-.btn{padding:7px 14px;border:1px solid #888;background:#f2f2f2;border-radius:3px}
+.btn{padding:5px 14px;border:1px solid #888;background:#f2f2f2;border-radius:3px}
 .btn:hover{background:#e6e6e6}
 #st{color:#1d4e89;font-weight:600}
 a.btn{color:inherit;text-decoration:none;display:inline-block}
-.dias{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.dias button{border:1px solid #1d4e89;background:#fff;color:#1d4e89;border-radius:99px;padding:3px 12px;text-transform:capitalize}
+.dias{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.dias button{border:1px solid #1d4e89;background:#fff;color:#1d4e89;border-radius:99px;padding:2px 12px;text-transform:capitalize}
 .dias button.on{background:#1d4e89;color:#fff}
 .dias button.zero b{color:#b00020}
 .dias button.on.zero b{color:#ffd0d6}
-.hint{margin:0 0 12px;color:#555;font-size:.88rem;min-height:1.2em}
+.hint{margin:0 0 8px;color:#555;font-size:.88rem;min-height:1.2em}
 .wrap{flex:1;min-height:0;overflow:auto;display:flex;justify-content:center;align-items:flex-start}
 table{border-collapse:collapse;margin:0 auto;flex:none;width:auto;font-size:14px}
-th,td{border:1px solid #222;padding:4px 10px;vertical-align:middle;white-space:nowrap;text-align:center}
-th{background:#0b2545;color:#fff;font-weight:700;padding:7px 10px;border-color:#0b2545}
+th,td{border:1px solid #222;padding:2px 10px;vertical-align:middle;white-space:nowrap;text-align:center}
+th{background:#0b2545;color:#fff;font-weight:700;padding:5px 10px;border-color:#0b2545}
 th.s{cursor:pointer;user-select:none;position:sticky;top:0;z-index:2}
 th.s:hover{background:#13315c}
-th.titulo{background:#1d4e89;border-color:#1d4e89;padding:20px 12px;cursor:default}
-.t1{font-size:1.6rem;font-weight:700}
+th.titulo{background:#1d4e89;border-color:#1d4e89;padding:10px 12px;cursor:default}
+.t1{font-size:1.45rem;font-weight:700}
 .t2{font-size:.95rem;font-weight:600;letter-spacing:.15em;margin-top:4px}
 tr.AJA td{background:#eaf3fc}
 tr.ABT td{background:#fdf1dc}
@@ -44,11 +44,11 @@ tbody tr:hover td{filter:brightness(.96)}
 td:nth-child(2),td:nth-child(3){text-align:left}
 td input,td select{font:inherit;border:1px solid #999;border-radius:3px;background:#fff;padding:3px 4px;text-align:center;width:auto}
 td:nth-child(2) input,td:nth-child(3) input{text-align:left}
-td select{width:100%;color:#555;margin-top:3px}
+td select{width:100%;color:#555;margin-top:2px}
 td input:focus,td select:focus{outline:2px solid #1d4e89}
 .b{display:flex;justify-content:center;align-items:center;gap:6px;padding:1px 2px}
 .b button{border:0;background:none;color:#b00020;font-size:1rem;line-height:1;padding:0 4px}
-.rod{margin:10px 0 0;font-size:.85rem;color:#555}
+.rod{margin:6px 0 0;font-size:.85rem;color:#555}
 #menu{position:fixed;display:none;z-index:50;background:#fff;border:1px solid #999;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.25);padding:4px;min-width:180px;text-align:left}
 #menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:4px}
 #menu button:hover{background:#e8eef7}
@@ -61,7 +61,7 @@ td input:focus,td select:focus{outline:2px solid #1d4e89}
   .bar,.dias,.hint,#menu{display:none!important}
   .wrap{overflow:visible;max-height:none}
   th.s{position:static}
-  table{zoom:.85}
+  table{zoom:.85!important}
   tbody tr:hover td{filter:none}
 }
 </style>
@@ -179,7 +179,16 @@ function render(){
     :modoLocal?"Modo local sem login: somente leitura."
     :podeEditar?"Tabela travada. Clique com o botão direito do mouse para editar, excluir ou adicionar servidores."
     :"Somente leitura: sua conta não tem permissão para editar a escala.";
+  ajusta();
 }
+/* Se a tabela ainda for mais alta que a tela, reduz a escala dela para caber sem rolar */
+function ajusta(){
+  const t=document.querySelector("table"),w=document.querySelector(".wrap");
+  t.style.zoom=1;
+  const h=t.offsetHeight,d=w.clientHeight;
+  if(h>d+1)t.style.zoom=Math.max(.5,d/h*.995);
+}
+addEventListener("resize",ajusta);
 $("fag").onchange=render;
 $("dias").onclick=e=>{const b=e.target.closest("button");if(!b)return;filtroDia=filtroDia===b.dataset.d?"":b.dataset.d;render()};
 document.querySelector("thead").onclick=e=>{const c=e.target.dataset.c;if(!c)return;
