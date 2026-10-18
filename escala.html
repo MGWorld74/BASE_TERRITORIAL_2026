@@ -9,12 +9,12 @@
 <style>
 *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 html,body{height:100%}
-body{font:14px "Segoe UI",Arial,sans-serif;margin:0;padding:20px;height:100vh;height:100dvh;overflow:hidden;box-sizing:border-box;color:#111;text-align:center;
+body{font:14px "Segoe UI",Arial,sans-serif;margin:0;padding:8px;height:100vh;height:100dvh;overflow:hidden;box-sizing:border-box;color:#111;text-align:center;
   display:flex;justify-content:center;align-items:center;
   background-color:#e6ecf3;
   background-image:linear-gradient(rgba(255,255,255,.62),rgba(255,255,255,.62)),url('background.png');
   background-size:100% 100%;background-position:center;background-repeat:no-repeat;background-attachment:fixed}
-.painel{background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 10px 36px rgba(0,0,0,.7);padding:14px 18px;width:fit-content;max-width:100%;min-width:0;margin:0 auto;display:flex;flex-direction:column;max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px)}
+.painel{background:rgba(255,255,255,.95);border-radius:8px;box-shadow:0 10px 36px rgba(0,0,0,.7);padding:12px 8px;width:100%;max-width:1400px;min-width:0;margin:0 auto;display:flex;flex-direction:column;max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px)}
 button{font:inherit;cursor:pointer}
 .btn{padding:5px 14px;border:1px solid #888;background:#f2f2f2;border-radius:3px}
 .btn:hover{background:#e6e6e6}
@@ -38,20 +38,27 @@ a.btn{color:inherit;text-decoration:none;display:inline-block}
 .dias button.zero b{color:#b00020}
 .dias button.on.zero b{color:#ffd0d6}
 .hint{margin:0 0 8px;color:#555;font-size:.88rem;min-height:1.2em}
-.wrap{flex:1;min-height:0;overflow:auto;display:flex;justify-content:center;align-items:flex-start}
-table{border-collapse:collapse;margin:0 auto;flex:none;width:auto;font-size:14px}
-.duas{display:flex;flex-direction:column;gap:14px;align-items:center;flex:none;width:max-content}
-.duas table{margin:0}
-#t2{font-size:19px}
-#t2 th{padding:6px 12px;border:0;border-left:1px solid rgba(255,255,255,.5)}
+.wrap{flex:1;min-height:0;overflow:auto}
+table{border-collapse:collapse;margin:0;width:auto;font-size:14px}
+/* Tabela superior: altura fixa (8 linhas); se passar disso, rola por dentro */
+.w2{flex:none;overflow:auto;margin-bottom:12px;height:230px}
+#t2{width:100%;font-size:15px}
+#t2 th{position:sticky;top:0;z-index:2;height:29px}
+/* Tabelas inferiores: ABT e AJA lado a lado, rolagem na área delas */
+.baixo{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+.ag{flex:1 1 580px;min-width:min-content}
+.ag td,.ag th{padding:2px 6px}
+.ag table{width:100%;font-size:12px}
+.ag th.ti{background:#0086c3;border-color:#0086c3;color:#fff;font-size:16px;height:26px;padding:0 10px;position:sticky;top:0;z-index:3}
+#t2 th{padding:0 12px;border:0;border-left:1px solid rgba(255,255,255,.5)}
 #t2 th:first-child{border-left:0}
-#t2 td{text-align:left;min-width:230px;background:#eef1f5;border:0;border-top:1px solid #d3dae3;border-left:2px solid #9db0c6}
+#t2 td{text-align:left;height:24px;padding:0 6px;line-height:20px;overflow:hidden;text-overflow:ellipsis;background:#eef1f5;border:0;border-top:1px solid #d3dae3;border-left:2px solid #9db0c6}
 #t2 td:first-child{border-left:1px solid #0b2545}
 #t2 td:last-child{border-right:1px solid #0b2545}
 #t2 tbody tr:last-child td{border-bottom:1px solid #0b2545}
 #t2 td.f{box-shadow:inset 0 0 0 2px #fff}
 #t2 td.f.fd{box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 9999px rgba(255,255,255,.35)}
-#t2 select{width:100%;font:inherit;padding:2px;margin:0}
+#t2 select{width:100%;font:inherit;padding:0;margin:0;height:22px}
 .sw{display:inline-block;width:14px;height:14px;border-radius:2px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(0,0,0,.3)}
 .cf{display:inline-block;margin-top:4px;font-size:.85em;white-space:nowrap}
 input[type=color]{width:34px;height:22px;padding:0;border:1px solid #888;vertical-align:middle;cursor:pointer;background:none}
@@ -60,7 +67,7 @@ input[type=color]{width:34px;height:22px;padding:0;border:1px solid #888;vertica
 
 th,td{border:1px solid #222;padding:2px 10px;vertical-align:middle;white-space:nowrap;text-align:center}
 th{background:#0b2545;color:#fff;font-weight:700;padding:5px 10px;border-color:#0b2545}
-th.s{cursor:pointer;user-select:none;position:sticky;top:0;z-index:2}
+th.s{cursor:pointer;user-select:none;position:sticky;top:25px;z-index:2}
 th.s:hover{background:#13315c}
 .t1{font-size:1.45rem;font-weight:700}
 .t2{font-size:.95rem;font-weight:700;font-style:normal;margin-top:4px}
@@ -69,9 +76,9 @@ tr.AJA td{background:#eaf3fc}
 tr.ABT td{background:#fdf1dc}
 tr.ed td{background:#fff9c4}
 tbody tr:hover td{filter:brightness(.96)}
-td:nth-child(2),td:nth-child(3){text-align:left}
+#baixo td:nth-child(1),#baixo td:nth-child(2){text-align:left}
 td input,td select{font:inherit;border:1px solid #999;border-radius:3px;background:#fff;padding:3px 4px;text-align:center;width:auto}
-td:nth-child(2) input,td:nth-child(3) input{text-align:left}
+#baixo td:nth-child(1) input,#baixo td:nth-child(2) input{text-align:left}
 td select{width:100%;color:#555;margin-top:2px}
 td input:focus,td select:focus{outline:2px solid #1d4e89}
 .b{display:flex;justify-content:center;align-items:center;gap:6px;padding:1px 2px}
@@ -86,9 +93,11 @@ td input:focus,td select:focus{outline:2px solid #1d4e89}
   body{display:block;padding:0;min-height:0;height:auto;overflow:visible;background:none!important}
   .painel{display:block;max-height:none;background:none;box-shadow:none;padding:0;width:auto}
   .faixa,.dias,.hint,#menu{display:none!important}
-  .wrap{overflow:visible;max-height:none}
-  th.s{position:static}
-  .duas{zoom:.62!important;flex-direction:column!important;align-items:center!important}
+  .wrap,.w2{overflow:visible;max-height:none}
+  .w2{height:auto!important}
+  th.s,th.ti,#t2 th{position:static}
+  .painel{zoom:.75;max-width:none}
+  .baixo{flex-wrap:nowrap}
   tbody tr:hover td{filter:none}
 }
 </style>
@@ -115,20 +124,18 @@ td input:focus,td select:focus{outline:2px solid #1d4e89}
 </div>
 <div class="dias" id="dias"></div>
 <p class="hint"><span id="ht"></span> <span id="st"></span></p>
-<div class="wrap">
-<div class="duas" id="duas">
+<div class="w2" id="w2">
 <table id="t2">
 <thead>
 <tr id="h2"></tr>
 </thead>
 <tbody id="tb2"></tbody>
 </table>
-<table id="t1">
-<thead>
-<tr><th class="s" data-c="ag" data-l="Agência">Agência</th><th class="s" data-c="nome" data-l="APM">APM</th><th class="s" data-c="email" data-l="e-mail">e-mail</th><th class="s" data-c="contato" data-l="Contato">Contato</th><th class="s" data-c="siape" data-l="SIAPE">SIAPE</th><th class="s" data-c="dias" data-l="Dia Agência">Dia Agência</th></tr>
-</thead>
-<tbody id="tb"></tbody>
-</table>
+</div>
+<div class="wrap">
+<div class="baixo" id="baixo">
+<section class="ag"><table><thead><tr><th class="ti" colspan="5">IBGE - ABT</th></tr><tr><th class="s" data-c="nome" data-l="Servidor">Servidor</th><th class="s" data-c="email" data-l="e-mail">e-mail</th><th class="s" data-c="contato" data-l="Contato">Contato</th><th class="s" data-c="siape" data-l="SIAPE">SIAPE</th><th class="s" data-c="dias" data-l="Dia Agência">Dia Agência</th></tr></thead><tbody id="tbABT"></tbody></table></section>
+<section class="ag"><table><thead><tr><th class="ti" colspan="5">IBGE - AJA</th></tr><tr><th class="s" data-c="nome" data-l="Servidor">Servidor</th><th class="s" data-c="email" data-l="e-mail">e-mail</th><th class="s" data-c="contato" data-l="Contato">Contato</th><th class="s" data-c="siape" data-l="SIAPE">SIAPE</th><th class="s" data-c="dias" data-l="Dia Agência">Dia Agência</th></tr></thead><tbody id="tbAJA"></tbody></table></section>
 </div>
 </div>
 </div>
@@ -159,7 +166,7 @@ const SEED=[
 
 let apms=[],editId=null,podeEditar=false,modoLocal=false,versao=null,meta={},usuario="",filtroDia="",ord={c:"",d:1},fila=Promise.resolve();
 const novos=new Set();let LV=[];
-const $=id=>document.getElementById(id),tb=$("tb"),menu=$("menu");
+const $=id=>document.getElementById(id),tb=$("baixo"),menu=$("menu");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const opts=(arr,cur)=>arr.map(v=>`<option${v===cur?" selected":""}>${esc(v)}</option>`).join("");
 const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
@@ -200,20 +207,20 @@ function filtrados(comDia){
   return apms.filter(a=>a.id===editId||(!comDia||!filtroDia||a.dias.includes(filtroDia)));
 }
 function ordenados(l){
-  const c=ord.c||"ag",v=a=>c==="dias"?(a.dias.length?DIAS.indexOf(a.dias[0]):9):norm(a[c]);
+  const c=ord.c||"nome",v=a=>c==="dias"?(a.dias.length?DIAS.indexOf(a.dias[0]):9):norm(a[c]);
   return [...l].sort((x,y)=>{const A=v(x),B=v(y);let r=A<B?-1:A>B?1:0;if(ord.c)r*=ord.d;return r||x.nome.localeCompare(y.nome,"pt")});
 }
 function render(){
   const L=ordenados(filtrados(true));LV=L;
-  tb.innerHTML=L.length?L.map(a=>{
+  const linha=a=>{
     const ed=a.id===editId,dl=DIAS.filter(d=>!a.dias.includes(d));
     const cell=(f,v)=>ed?`<input data-f="${f}" size="${sz(v)}" value="${esc(v)}">`:esc(v);
     const dias=a.dias.map(d=>`<div class="b"><span>${d}</span>${ed?`<button title="Remover dia" data-rmd="${d}">×</button>`:""}</div>`).join("");
     return`<tr class="${a.ag}${ed?" ed":""}" data-id="${a.id}">
-<td>${ed?`<select data-f="ag" style="margin:0">${opts(["AJA","ABT"],a.ag)}</select>`:esc(a.ag)}</td>
-<td>${ed?`${cell("nome",a.nome)}<br><label class="cf">Cor de fundo <input type="color" data-f="cor" value="${a.cor}"></label>`:`<span class="sw" style="background:${a.cor}"></span>${esc(a.nome)}`}</td><td>${cell("email",a.email)}</td><td>${ed?`<input data-f="contato" inputmode="tel" maxlength="15" size="16" placeholder="(##) #####-####" value="${esc(a.contato)}">`:esc(a.contato)}</td><td>${cell("siape",a.siape)}</td>
-<td>${dias}${ed&&dl.length?`<select data-f="addd"><option value="">+ adicionar dia</option>${opts(dl)}</select>`:""}</td></tr>`}).join("")
-    :`<tr><td colspan="6">Nenhum servidor encontrado.</td></tr>`;
+<td>${ed?`${cell("nome",a.nome)}<br><label class="cf">Agência <select data-f="ag" style="margin:0;width:auto">${opts(["AJA","ABT"],a.ag)}</select></label> <label class="cf">Cor de fundo <input type="color" data-f="cor" value="${a.cor}"></label>`:`<span class="sw" style="background:${a.cor}"></span>${esc(a.nome)}`}</td><td>${cell("email",a.email)}</td><td>${ed?`<input data-f="contato" inputmode="tel" maxlength="15" size="16" placeholder="(##) #####-####" value="${esc(a.contato)}">`:esc(a.contato)}</td><td>${cell("siape",a.siape)}</td>
+<td>${dias}${ed&&dl.length?`<select data-f="addd"><option value="">+ adicionar dia</option>${opts(dl)}</select>`:""}</td></tr>`};
+  ["ABT","AJA"].forEach(ag=>{const l=L.filter(a=>a.ag===ag);
+    $("tb"+ag).innerHTML=l.length?l.map(linha).join(""):`<tr><td colspan="5">Nenhum servidor encontrado.</td></tr>`});
   const base=filtrados(false);
   $("dias").innerHTML=DIAS.map(d=>{const n=base.filter(a=>a.dias.includes(d)).length;
     return`<button data-d="${d}" class="${filtroDia===d?"on":""}${n?"":" zero"}" title="Filtrar por este dia">${d.split("-")[0]} <b>${n}</b></button>`}).join("");
@@ -229,18 +236,18 @@ function render(){
 const porAg=l=>[...l].sort((x,y)=>x.ag.localeCompare(y.ag)||x.nome.localeCompare(y.nome,"pt"));
 function render2(){
   const A=porAg(apms),col=DIAS.map(d=>A.filter(a=>a.dias.includes(d)));
-  const n=Math.max(1,Math.max(...col.map(c=>c.length))+(podeEditar?1:0));
+  const n=Math.max(8,...col.map(c=>c.length));
   $("h2").innerHTML=DIAS.map(d=>`<th${filtroDia===d?' class="fd"':""}>${d}</th>`).join("");
   let h="";
   for(let i=0;i<n;i++)h+="<tr>"+DIAS.map((d,j)=>{const a=col[j][i];
     return`<td data-d="${d}" data-i="${i}"${a?` data-id="${a.id}"`:""} class="${a?"f ":""}${filtroDia===d?"fd":""}"${a?` style="background:${a.cor};color:${txt(a.cor)}"`:""}>${a?esc(a.nome||"(sem nome)"):""}</td>`}).join("")+"</tr>";
   $("tb2").innerHTML=h;
 }
-/* Transforma a célula da tabela 2 numa lista com todos os APMs da tabela 1 */
+/* Transforma a célula da tabela superior numa lista com todos os servidores */
 function escolher(td){
   const d=td.dataset.d,atual=td.dataset.id||"";
   const op=porAg(apms).filter(a=>a.id===atual||!a.dias.includes(d));
-  td.innerHTML=`<select class="pick" data-d="${d}" data-old="${atual}"><option value="">${atual?"(remover deste dia)":"— escolher APM —"}</option>${op.map(a=>`<option value="${a.id}"${a.id===atual?" selected":""}>${esc(a.nome||"(sem nome)")} (${a.ag})</option>`).join("")}</select>`;
+  td.innerHTML=`<select class="pick" data-d="${d}" data-old="${atual}"><option value="">${atual?"(remover deste dia)":"— escolher servidor —"}</option>${op.map(a=>`<option value="${a.id}"${a.id===atual?" selected":""}>${esc(a.nome||"(sem nome)")} (${a.ag})</option>`).join("")}</select>`;
   const sl=td.firstChild;sl.focus();try{sl.showPicker()}catch(e){}
 }
 $("tb2").addEventListener("change",async e=>{
@@ -253,18 +260,15 @@ $("tb2").addEventListener("change",async e=>{
   await salvar();render();
 });
 $("tb2").addEventListener("focusout",e=>{const sl=e.target;if(sl.classList&&sl.classList.contains("pick")&&sl.value===sl.dataset.old)render2()});
-/* Reduz o conjunto das duas tabelas para caber na tela sem rolar */
+/* Tabela superior com tamanho fixo: cabeçalho + 8 linhas (acima disso, rola por dentro) */
 function ajusta(){
-  const D=$("duas"),w=document.querySelector(".wrap"),p=document.querySelector(".painel");
-  D.style.zoom=1;
-  const outros=p.offsetHeight-w.offsetHeight;
-  const aw=document.documentElement.clientWidth-40-36-2,ah=innerHeight-40-outros-2;
-  D.style.zoom=Math.max(.35,Math.min(1,aw/D.offsetWidth,ah/D.offsetHeight)*.995);
+  const w=$("w2"),r=$("tb2").rows[0];if(!r)return;
+  w.style.height=($("t2").tHead.offsetHeight+r.offsetHeight*8+1)+"px";
 }
 addEventListener("resize",ajusta);
 $("dias").onclick=e=>{const b=e.target.closest("button");if(!b)return;filtroDia=filtroDia===b.dataset.d?"":b.dataset.d;render()};
-$("t1").querySelector("thead").onclick=e=>{const c=e.target.dataset.c;if(!c)return;
-  if(ord.c!==c)ord={c,d:1};else if(ord.d===1)ord.d=-1;else ord={c:"",d:1};render()};
+tb.addEventListener("click",e=>{const th=e.target.closest("th.s");if(!th)return;const c=th.dataset.c;
+  if(ord.c!==c)ord={c,d:1};else if(ord.d===1)ord.d=-1;else ord={c:"",d:1};render()});
 
 /* Edição (só pelo botão direito, só para editores) */
 async function endEdit(){
@@ -280,7 +284,7 @@ tb.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.tagName==="INPUT"
 tb.addEventListener("change",async e=>{
   const f=e.target.dataset.f;if(!f)return;const a=find(e.target),v=e.target.value;
   if(f==="contato"){const d=v.replace(/\D/g,"");if(d.length&&d.length!==11){alert("Informe o telefone completo no formato (##) #####-####, somente números.");e.target.value=a.contato;return}a.contato=fone(v)}
-  else if(f==="cor"){const c=v.toLowerCase(),dup=apms.find(x=>x!==a&&x.cor===c);if(dup){alert("Essa cor já é usada por "+(dup.nome||"outro APM")+". Escolha outra.");e.target.value=a.cor;return}a.cor=c}
+  else if(f==="cor"){const c=v.toLowerCase(),dup=apms.find(x=>x!==a&&x.cor===c);if(dup){alert("Essa cor já é usada por "+(dup.nome||"outro servidor")+". Escolha outra.");e.target.value=a.cor;return}a.cor=c}
   else if(f==="addd"){if(v&&!a.dias.includes(v))a.dias=ordem([...a.dias,v])}else a[f]=v.trim();
   if(await salvar())novos.delete(a.id);
   if(f==="addd"||f==="ag")render();else{render2();ajusta()}
@@ -289,14 +293,14 @@ tb.addEventListener("click",async e=>{
   const t=e.target;if(!(t instanceof HTMLButtonElement)||t.dataset.rmd===undefined)return;
   const a=find(t);a.dias=a.dias.filter(d=>d!==t.dataset.rmd);await salvar();render();
 });
-document.querySelector(".wrap").addEventListener("contextmenu",e=>{
-  if(!podeEditar)return;
+document.querySelector(".painel").addEventListener("contextmenu",e=>{
+  if(!podeEditar||!e.target.closest(".w2,.wrap"))return;
   e.preventDefault();
-  const cel=e.target.closest("#t2 td[data-d]"),tr=e.target.closest("#tb tr[data-id]");
+  const cel=e.target.closest("#t2 td[data-d]"),tr=e.target.closest("#baixo tr[data-id]");
   const id=cel?(cel.dataset.id||""):(tr?tr.dataset.id:"");
   let h="";
-  if(cel){const d=cel.dataset.d;h=`<button data-act="pick" data-d="${d}" data-i="${cel.dataset.i}">Escolher APM para ${d}</button>`+(id?`<button class="d" data-act="rmdia" data-id="${id}" data-d="${d}">Remover da ${d}</button>`:"")}
-  menu.innerHTML=h+(id?`<button data-act="edit" data-id="${id}">Editar servidor</button><button class="d" data-act="del" data-id="${id}">Excluir servidor</button>`:"")+`<button data-act="add">Adicionar APM</button>`;
+  if(cel){const d=cel.dataset.d;h=`<button data-act="pick" data-d="${d}" data-i="${cel.dataset.i}">Escolher servidor para ${d}</button>`+(id?`<button class="d" data-act="rmdia" data-id="${id}" data-d="${d}">Remover da ${d}</button>`:"")}
+  menu.innerHTML=h+(id?`<button data-act="edit" data-id="${id}">Editar servidor</button><button class="d" data-act="del" data-id="${id}">Excluir servidor</button>`:"")+`<button data-act="add">Adicionar servidor</button>`;
   menu.style.display="block";
   menu.style.left=Math.min(e.clientX,innerWidth-menu.offsetWidth-8)+"px";
   menu.style.top=Math.min(e.clientY,innerHeight-menu.offsetHeight-8)+"px";
