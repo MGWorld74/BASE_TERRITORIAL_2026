@@ -48,6 +48,7 @@ table{border-collapse:collapse;margin:0;width:auto;font-size:14px}
 .baixo{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
 .ag{flex:1 1 580px;min-width:min-content}
 .ag td,.ag th{padding:2px 6px}
+.qt{display:inline-block;margin-left:8px;padding:1px 10px;border-radius:99px;background:rgba(255,255,255,.22);font-size:12px;font-weight:600;vertical-align:2px}
 .ag table{width:100%;font-size:12px}
 .ag th.ti{background:#0086c3;border-color:#0086c3;color:#fff;font-size:16px;height:26px;padding:0 10px;position:sticky;top:0;z-index:3}
 #t2 th{padding:0 12px;border:0;border-left:1px solid rgba(255,255,255,.5)}
@@ -134,8 +135,8 @@ td input:focus,td select:focus{outline:2px solid #1d4e89}
 </div>
 <div class="wrap">
 <div class="baixo" id="baixo">
-<section class="ag"><table><thead><tr><th class="ti" colspan="5">IBGE - ABT</th></tr><tr><th class="s" data-c="nome" data-l="Servidor">Servidor</th><th class="s" data-c="email" data-l="e-mail">e-mail</th><th class="s" data-c="contato" data-l="Contato">Contato</th><th class="s" data-c="siape" data-l="SIAPE">SIAPE</th><th class="s" data-c="dias" data-l="Dia Agência">Dia Agência</th></tr></thead><tbody id="tbABT"></tbody></table></section>
-<section class="ag"><table><thead><tr><th class="ti" colspan="5">IBGE - AJA</th></tr><tr><th class="s" data-c="nome" data-l="Servidor">Servidor</th><th class="s" data-c="email" data-l="e-mail">e-mail</th><th class="s" data-c="contato" data-l="Contato">Contato</th><th class="s" data-c="siape" data-l="SIAPE">SIAPE</th><th class="s" data-c="dias" data-l="Dia Agência">Dia Agência</th></tr></thead><tbody id="tbAJA"></tbody></table></section>
+<section class="ag"><table><thead><tr><th class="ti" colspan="5">IBGE - ABT <span class="qt" id="qtABT"></span></th></tr><tr><th class="s" data-c="nome" data-l="Servidor">Servidor</th><th class="s" data-c="email" data-l="e-mail">e-mail</th><th class="s" data-c="contato" data-l="Contato">Contato</th><th class="s" data-c="siape" data-l="SIAPE">SIAPE</th><th class="s" data-c="dias" data-l="Dia Agência">Dia Agência</th></tr></thead><tbody id="tbABT"></tbody></table></section>
+<section class="ag"><table><thead><tr><th class="ti" colspan="5">IBGE - AJA <span class="qt" id="qtAJA"></span></th></tr><tr><th class="s" data-c="nome" data-l="Servidor">Servidor</th><th class="s" data-c="email" data-l="e-mail">e-mail</th><th class="s" data-c="contato" data-l="Contato">Contato</th><th class="s" data-c="siape" data-l="SIAPE">SIAPE</th><th class="s" data-c="dias" data-l="Dia Agência">Dia Agência</th></tr></thead><tbody id="tbAJA"></tbody></table></section>
 </div>
 </div>
 </div>
@@ -219,7 +220,7 @@ function render(){
     return`<tr class="${a.ag}${ed?" ed":""}" data-id="${a.id}">
 <td>${ed?`${cell("nome",a.nome)}<br><label class="cf">Agência <select data-f="ag" style="margin:0;width:auto">${opts(["AJA","ABT"],a.ag)}</select></label> <label class="cf">Cor de fundo <input type="color" data-f="cor" value="${a.cor}"></label>`:`<span class="sw" style="background:${a.cor}"></span>${esc(a.nome)}`}</td><td>${cell("email",a.email)}</td><td>${ed?`<input data-f="contato" inputmode="tel" maxlength="15" size="16" placeholder="(##) #####-####" value="${esc(a.contato)}">`:esc(a.contato)}</td><td>${cell("siape",a.siape)}</td>
 <td>${dias}${ed&&dl.length?`<select data-f="addd"><option value="">+ adicionar dia</option>${opts(dl)}</select>`:""}</td></tr>`};
-  ["ABT","AJA"].forEach(ag=>{const l=L.filter(a=>a.ag===ag);
+  ["ABT","AJA"].forEach(ag=>{const tot=apms.filter(a=>a.ag===ag).length;$("qt"+ag).textContent=tot+(tot===1?" servidor":" servidores");const l=L.filter(a=>a.ag===ag);
     $("tb"+ag).innerHTML=l.length?l.map(linha).join(""):`<tr><td colspan="5">Nenhum servidor encontrado.</td></tr>`});
   const base=filtrados(false);
   $("dias").innerHTML=DIAS.map(d=>{const n=base.filter(a=>a.dias.includes(d)).length;
@@ -300,7 +301,7 @@ document.querySelector(".painel").addEventListener("contextmenu",e=>{
   const id=cel?(cel.dataset.id||""):(tr?tr.dataset.id:"");
   let h="";
   if(cel){const d=cel.dataset.d;h=`<button data-act="pick" data-d="${d}" data-i="${cel.dataset.i}">Escolher servidor para ${d}</button>`+(id?`<button class="d" data-act="rmdia" data-id="${id}" data-d="${d}">Remover da ${d}</button>`:"")}
-  menu.innerHTML=h+(id?`<button data-act="edit" data-id="${id}">Editar servidor</button><button class="d" data-act="del" data-id="${id}">Excluir servidor</button>`:"")+`<button data-act="add">Adicionar servidor</button>`;
+  menu.innerHTML=h+(id?`<button data-act="edit" data-id="${id}">Editar servidor</button><button class="d" data-act="del" data-id="${id}">Excluir servidor</button>`:"")+`<button data-act="add" data-ag="ABT">Adicionar servidor na ABT</button><button data-act="add" data-ag="AJA">Adicionar servidor na AJA</button>`;
   menu.style.display="block";
   menu.style.left=Math.min(e.clientX,innerWidth-menu.offsetWidth-8)+"px";
   menu.style.top=Math.min(e.clientY,innerHeight-menu.offsetHeight-8)+"px";
@@ -315,7 +316,7 @@ menu.addEventListener("click",async e=>{
   else if(act==="addia"||act==="rmdia"){const a=apms.find(x=>x.id===id),d=b.dataset.d;
     if(a&&d){a.dias=act==="addia"?ordem([...new Set([...a.dias,d])]):a.dias.filter(x=>x!==d);await salvar();render()}}
   else if(act==="pick"){const td=$("tb2").querySelector(`td[data-d="${b.dataset.d}"][data-i="${b.dataset.i}"]`);if(td)escolher(td)}
-  else if(act==="add"){const n={id:uid(),ag:"AJA",nome:"",email:"",contato:"",siape:"",dias:[],cor:corNova()};apms.push(n);novos.add(n.id);abrir(n.id)}
+  else if(act==="add"){const n={id:uid(),ag:b.dataset.ag==="ABT"?"ABT":"AJA",nome:"",email:"",contato:"",siape:"",dias:[],cor:corNova()};apms.push(n);novos.add(n.id);abrir(n.id)}
 });
 document.addEventListener("click",e=>{
   if(!e.target.closest("#menu"))menu.style.display="none";
