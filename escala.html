@@ -51,7 +51,9 @@ table{border-collapse:collapse;margin:0;width:auto;font-size:14px}
 .qt{display:inline-block;margin-left:8px;padding:1px 10px;border-radius:99px;background:rgba(255,255,255,.22);font-size:12px;font-weight:600;vertical-align:2px}
 .cn{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .cn .nm{min-width:0}
-.tag{flex:none;font-size:.68em;font-weight:700;letter-spacing:.03em;line-height:1.5;padding:0 6px;border:1px solid currentColor;border-radius:4px;opacity:.9}
+.tag{flex:none;font-size:.68em;font-weight:700;letter-spacing:.03em;line-height:1.5;padding:0 7px;border:1px solid;border-radius:4px}
+.tag.ABT{background:#0b2545;color:#fff;border-color:#fff}
+.tag.AJA{background:#fff;color:#0b2545;border-color:#0b2545}
 #t2 th{padding:0 12px;border:0;border-left:1px solid rgba(255,255,255,.5)}
 #t2 th:first-child{border-left:0}
 #t2 td{text-align:left;height:30px;padding:0 6px;line-height:22px;white-space:normal;background:#eef1f5;border:0;border-top:1px solid #d3dae3;border-left:2px solid #9db0c6}
@@ -282,7 +284,7 @@ function render2(){
   $("h2").innerHTML=DIAS.map(d=>`<th${filtroDia===d?' class="fd"':""}>${d}</th>`).join("");
   let h="";
   for(let i=0;i<n;i++)h+="<tr>"+DIAS.map((d,j)=>{const a=col[j][i];
-    return`<td data-d="${d}" data-i="${i}"${a?` data-id="${a.id}"`:""} class="${a?"f ":""}${filtroDia===d?"fd":""}"${a?` style="background:${a.cor};color:${txt(a.cor)}"`:""}>${a?`<div class="cn"><span class="nm">${esc(a.nome||"(sem nome)")}</span><span class="tag">${a.ag}</span></div>`:""}</td>`}).join("")+"</tr>";
+    return`<td data-d="${d}" data-i="${i}"${a?` data-id="${a.id}"`:""} class="${a?"f ":""}${filtroDia===d?"fd":""}"${a?` style="background:${a.cor};color:${txt(a.cor)}"`:""}>${a?`<div class="cn"><span class="nm">${esc(a.nome||"(sem nome)")}</span><span class="tag ${a.ag}">${a.ag}</span></div>`:""}</td>`}).join("")+"</tr>";
   $("tb2").innerHTML=h;
 }
 /* Transforma a célula da tabela superior numa lista com todos os servidores */
