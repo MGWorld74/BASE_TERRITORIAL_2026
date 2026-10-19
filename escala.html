@@ -54,6 +54,11 @@ table{border-collapse:collapse;margin:0;width:auto;font-size:14px}
 .tag{flex:none;font-size:.68em;font-weight:700;letter-spacing:.03em;line-height:1.5;padding:0 7px;border:1px solid;border-radius:4px}
 .tag.ABT{background:#0b2545;color:#fff;border-color:#fff}
 .tag.AJA{background:#fff;color:#0b2545;border-color:#0b2545}
+.tags{flex:none;display:flex;gap:5px;align-items:center}
+.tag.fer{background:#ffd54f;color:#3b2a00;border-color:#b38600;white-space:nowrap;font-style:normal}
+#t2 td.fer{background-image:repeating-linear-gradient(135deg,rgba(110,110,110,.32) 0 7px,rgba(110,110,110,0) 7px 14px)!important}
+#t2 td.fer .nm{font-style:italic;opacity:.8}
+#baixo .tag.fer{margin-left:8px;vertical-align:2px;font-size:.75em}
 #t2 th{padding:0 12px;border:0;border-left:1px solid rgba(255,255,255,.5)}
 #t2 th:first-child{border-left:0}
 #t2 td{text-align:left;height:30px;padding:0 6px;line-height:22px;white-space:normal;background:#eef1f5;border:0;border-top:1px solid #d3dae3;border-left:2px solid #9db0c6}
@@ -221,7 +226,7 @@ const fone=v=>{const d=String(v||"").replace(/\D/g,"").slice(0,11);if(!d)return"
 const sz=v=>Math.max(8,String(v||"").length+1);
 const ordem=l=>[...l].sort((x,y)=>DIAS.indexOf(x)-DIAS.indexOf(y));
 const st=t=>$("st").textContent=t;
-const normaliza=l=>{const r=(Array.isArray(l)?l:[]).map(a=>({id:a.id||uid(),ag:a.ag==="ABT"?"ABT":"AJA",nome:a.nome||"",email:a.email||"",contato:fone(a.contato),siape:String(a.siape||""),dias:ordem(Array.isArray(a.dias)?a.dias:(a.dia?[a.dia]:[])),cor:/^#[0-9a-f]{6}$/i.test(a.cor||"")?a.cor.toLowerCase():""}));
+const normaliza=l=>{const r=(Array.isArray(l)?l:[]).map(a=>({id:a.id||uid(),ag:a.ag==="ABT"?"ABT":"AJA",nome:a.nome||"",email:a.email||"",contato:fone(a.contato),siape:String(a.siape||""),dias:ordem(Array.isArray(a.dias)?a.dias:(a.dia?[a.dia]:[])),cor:/^#[0-9a-f]{6}$/i.test(a.cor||"")?a.cor.toLowerCase():"",...(a.ferias===true?{ferias:true}:{})}));
   const us=new Set(r.map(x=>x.cor).filter(Boolean));r.forEach((x,i)=>{if(!x.cor){const c=corLivre(us);x.cor=c;us.add(c)}});return r};
 const hsl2hex=(h,s,l)=>{s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return"#"+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,"0")).join("")};
 const corLivre=us=>{const c=PAL.find(p=>!us.has(p));if(c)return c;for(let i=0;i<720;i++){const x=hsl2hex((i*137.5)%360,60,45);if(!us.has(x))return x}return PAL[0]};
@@ -260,7 +265,7 @@ function render(){
     const ed=a.id===editId;
     const cell=(f,v)=>ed?`<input data-f="${f}" size="${sz(v)}" value="${esc(v)}">`:esc(v);
     return`<tr class="${a.ag}${ed?" ed":""}" data-id="${a.id}">
-<td>${ed?`${cell("nome",a.nome)}<br><label class="cf">Agência <select data-f="ag" style="margin:0;width:auto">${opts(["AJA","ABT"],a.ag)}</select></label> <label class="cf">Cor de fundo <input type="color" data-f="cor" value="${a.cor}"></label>`:`<span class="sw" style="background:${a.cor}"></span>${esc(a.nome)}`}</td><td>${cell("email",a.email)}</td><td>${ed?`<input data-f="contato" inputmode="tel" maxlength="15" size="16" placeholder="(##) #####-####" value="${esc(a.contato)}">`:esc(a.contato)}</td><td>${cell("siape",a.siape)}</td></tr>`};
+<td>${ed?`${cell("nome",a.nome)}<br><label class="cf">Agência <select data-f="ag" style="margin:0;width:auto">${opts(["AJA","ABT"],a.ag)}</select></label> <label class="cf">Cor de fundo <input type="color" data-f="cor" value="${a.cor}"></label>`:`<span class="sw" style="background:${a.cor}"></span>${esc(a.nome)}${a.ferias?'<span class="tag fer">🌴 Férias</span>':""}`}</td><td>${cell("email",a.email)}</td><td>${ed?`<input data-f="contato" inputmode="tel" maxlength="15" size="16" placeholder="(##) #####-####" value="${esc(a.contato)}">`:esc(a.contato)}</td><td>${cell("siape",a.siape)}</td></tr>`};
   const cont=g=>{const t=apms.filter(a=>a.ag===g).length;return t+(t===1?" servidor":" servidores")};
   $("qtABT").textContent=cont("ABT");$("qtAJA").textContent=cont("AJA");
   $("ov").hidden=!ag;
@@ -284,14 +289,14 @@ function render2(){
   $("h2").innerHTML=DIAS.map(d=>`<th${filtroDia===d?' class="fd"':""}>${d}</th>`).join("");
   let h="";
   for(let i=0;i<n;i++)h+="<tr>"+DIAS.map((d,j)=>{const a=col[j][i];
-    return`<td data-d="${d}" data-i="${i}"${a?` data-id="${a.id}"`:""} class="${a?"f ":""}${filtroDia===d?"fd":""}"${a?` style="background:${a.cor};color:${txt(a.cor)}"`:""}>${a?`<div class="cn"><span class="nm">${esc(a.nome||"(sem nome)")}</span><span class="tag ${a.ag}">${a.ag}</span></div>`:""}</td>`}).join("")+"</tr>";
+    return`<td data-d="${d}" data-i="${i}"${a?` data-id="${a.id}"`:""} class="${a?"f ":""}${a&&a.ferias?"fer ":""}${filtroDia===d?"fd":""}"${a?` style="background:${a.cor};color:${txt(a.cor)}"`:""}>${a?`<div class="cn"><span class="nm">${esc(a.nome||"(sem nome)")}</span><span class="tags">${a.ferias?'<span class="tag fer">🌴 Férias</span>':""}<span class="tag ${a.ag}">${a.ag}</span></span></div>`:""}</td>`}).join("")+"</tr>";
   $("tb2").innerHTML=h;
 }
 /* Transforma a célula da tabela superior numa lista com todos os servidores */
 function escolher(td){
   const d=td.dataset.d,atual=td.dataset.id||"";
   const op=porAg(apms).filter(a=>a.id===atual||!a.dias.includes(d));
-  td.innerHTML=`<select class="pick" data-d="${d}" data-old="${atual}"><option value="">${atual?"(remover deste dia)":"— escolher servidor —"}</option>${op.map(a=>`<option value="${a.id}"${a.id===atual?" selected":""}>${esc(a.nome||"(sem nome)")} (${a.ag})</option>`).join("")}</select>`;
+  td.innerHTML=`<select class="pick" data-d="${d}" data-old="${atual}"><option value="">${atual?"(remover deste dia)":"— escolher servidor —"}</option>${op.map(a=>`<option value="${a.id}"${a.id===atual?" selected":""}>${esc(a.nome||"(sem nome)")} (${a.ag})${a.ferias?" – férias":""}</option>`).join("")}</select>`;
   const sl=td.firstChild;sl.focus();try{sl.showPicker()}catch(e){}
 }
 $("tb2").addEventListener("change",async e=>{
@@ -376,6 +381,7 @@ document.addEventListener("contextmenu",e=>{
     id=cel.dataset.id||"";const d=cel.dataset.d;
     h=`<button data-act="pick" data-d="${d}" data-i="${cel.dataset.i}">Escolher servidor para ${d}</button><button data-act="addnew" data-d="${d}">Adicionar servidor em ${d}</button>`+(id?`<button class="d" data-act="rmdia" data-id="${id}" data-d="${d}">Remover da ${d}</button>`:"");
   }else id=lin?lin.dataset.id:"";
+  if(id){const f=apms.find(x=>x.id===id);h+=`<button data-act="ferias" data-id="${id}" data-v="${f&&f.ferias?0:1}">${f&&f.ferias?"Remover férias":"Marcar férias"}</button>`}
   if(id)h+=`<button data-act="edit" data-id="${id}">Editar servidor</button><button class="d" data-act="del" data-id="${id}">Excluir servidor</button>`;
   if(mod)h+=`<button data-act="add" data-ag="${agAberta}">Adicionar servidor na ${agAberta}</button>`;
   menu.innerHTML=h;
@@ -392,6 +398,8 @@ menu.addEventListener("click",async e=>{
   if(act==="edit"){if(apms.some(x=>x.id===id))abrir(id)}
   else if(act==="del"){const a=apms.find(x=>x.id===id);
     if(a&&confirm("Excluir "+(a.nome||"este servidor")+" da escala?")){apms=apms.filter(x=>x!==a);await salvar();render()}}
+  else if(act==="ferias"){const a=apms.find(x=>x.id===id);
+    if(a){if(b.dataset.v==="1")a.ferias=true;else delete a.ferias;await salvar();render()}}
   else if(act==="rmdia"){const a=apms.find(x=>x.id===id),d=b.dataset.d;
     if(a&&d){a.dias=a.dias.filter(x=>x!==d);await salvar();render()}}
   else if(act==="pick"){const td=$("tb2").querySelector(`td[data-d="${b.dataset.d}"][data-i="${b.dataset.i}"]`);if(td)escolher(td)}
