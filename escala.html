@@ -99,6 +99,7 @@ td input:focus,td select:focus{outline:2px solid #1d4e89}
 /* Quadros ABT / AJA sobre a tela */
 .ov{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(10,20,40,.55)}
 .ov[hidden]{display:none!important}
+.dlgb label[hidden]{display:none}
 #ovAdd{z-index:45}
 .modal{background:#fff;border-radius:8px;box-shadow:0 12px 44px rgba(0,0,0,.55);width:min(1150px,96vw);max-height:92vh;display:flex;flex-direction:column;overflow:hidden;outline:0;text-align:left}
 .mh{background:#0086c3;color:#fff;display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:22px;font-weight:700}
@@ -191,6 +192,19 @@ td input:focus,td select:focus{outline:2px solid #1d4e89}
     </div>
   </div>
 </div>
+<!-- Senha de edição -->
+<div class="ov" id="ovSen" hidden style="z-index:60">
+  <div class="modal dlg" role="dialog" aria-modal="true" aria-labelledby="senT">
+    <div class="mh"><span id="senT">Senha de edição</span><button type="button" class="mx" id="senX" title="Fechar" aria-label="Fechar">×</button></div>
+    <div class="dlgb">
+      <label id="lbAtual"><span id="lbAtualT">Senha</span><input id="senAtual" type="password" autocomplete="off"></label>
+      <label id="lbNova" hidden>Nova senha<input id="senNova" type="password" autocomplete="off"></label>
+      <label id="lbConf" hidden>Repita a nova senha<input id="senConf" type="password" autocomplete="off"></label>
+      <div class="err" id="senErr" role="alert"></div>
+      <div class="acoes"><button type="button" class="btn" id="senCan">Cancelar</button><button type="button" class="btn pri" id="senOk">Confirmar</button></div>
+    </div>
+  </div>
+</div>
 <div id="menu"></div>
 
 <script>
@@ -216,7 +230,7 @@ const SEED=[
 ["ABT","Icaro Leandro Costa dos Santos Teixeira","icaro.teixeira@ibge.gov.br","3452834","terça-feira"],
 ["ABT","Joao Gabriel Martins da Cruz Moraes","joao.moraes@ibge.gov.br","3505895","terça-feira"]];
 
-let apms=[],editId=null,agAberta=null,addD="",podeEditar=false,modoLocal=false,versao=null,meta={},usuario="",filtroDia="",ord={c:"",d:1},fila=Promise.resolve();
+let apms=[],editId=null,agAberta=null,addD="",podeEditar=false,senhaEd="",modoLocal=false,versao=null,meta={},usuario="",filtroDia="",ord={c:"",d:1},fila=Promise.resolve();
 const novos=new Set();let LV=[];
 const $=id=>document.getElementById(id),tb=$("baixo"),menu=$("menu");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -241,16 +255,17 @@ async function carregar(){
   render();
 }
 async function _salvar(){
-  if(!podeEditar)return false;
+  if(!podeEditar||!senhaEd)return false;
   st("Salvando…");
-  const linha={dados:apms,atualizado_em:new Date().toISOString(),atualizado_por:usuario},sel="atualizado_em,atualizado_por";
-  const r=versao===null?await sb.from("escala").insert({id:1,...linha}).select(sel)
-    :await sb.from("escala").update(linha).eq("id",1).eq("atualizado_em",versao).select(sel);
-  if(r.error||!r.data||!r.data.length){
-    alert(r.error?"Não foi possível salvar: "+r.error.message:"Outra pessoa alterou a escala enquanto você editava. Vou recarregar a versão mais recente; refaça a sua alteração.");
-    editId=null;await carregar();st("");return false;
+  const r=await sb.rpc("escala_gravar",{p_senha:senhaEd,p_dados:apms,p_versao:versao});
+  if(r.error||!r.data){
+    let m;
+    if(r.error&&/SENHA_INCORRETA/.test(r.error.message)){senhaEd="";m="A senha de edição foi alterada. Clique com o botão direito e digite a nova senha."}
+    else if(r.error)m="Não foi possível salvar: "+r.error.message;
+    else m="Outra pessoa alterou a escala enquanto você editava. Vou recarregar a versão mais recente; refaça a sua alteração.";
+    alert(m);editId=null;await carregar();st("");return false;
   }
-  versao=r.data[0].atualizado_em;meta=r.data[0];st("Salvo");setTimeout(()=>st(""),1500);return true;
+  versao=r.data.atualizado_em;meta=r.data;st("Salvo");setTimeout(()=>st(""),1500);return true;
 }
 const salvar=()=>fila=fila.then(_salvar);
 
@@ -370,12 +385,45 @@ $("addOk").onclick=incluir;$("addCan").onclick=fechaAdd;$("addX").onclick=fechaA
 ovAdd.addEventListener("mousedown",e=>{if(e.target===ovAdd)fechaAdd()});
 ovAdd.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.tagName!=="BUTTON"){e.preventDefault();incluir()}});
 
-/* Menu do botão direito: tabela visível e quadros ABT/AJA (só para editores) */
-document.addEventListener("contextmenu",e=>{
-  if(!podeEditar)return;
-  const cel=e.target.closest("#t2 td[data-d]"),lin=e.target.closest("#baixo tr[data-id]"),mod=e.target.closest("#modal");
-  if(!cel&&!mod)return;
-  e.preventDefault();
+/* Senha de edição: pedida uma vez ao abrir a página; a senha fica guardada no Supabase (igual em qualquer computador) */
+const ovSen=$("ovSen"),senErr=m=>{$("senErr").textContent=m||""};
+let senRes=null;
+function dialogoSenha(modo){
+  return new Promise(res=>{
+    const troca=modo==="troca";
+    $("senT").textContent=troca?"Alterar senha":"Senha de edição";
+    $("lbAtualT").textContent=troca?"Senha atual":"Senha";
+    $("lbNova").hidden=$("lbConf").hidden=!troca;
+    ["senAtual","senNova","senConf"].forEach(i=>$(i).value="");senErr("");
+    $("senOk").disabled=false;ovSen.hidden=false;ovSen.dataset.modo=modo;$("senAtual").focus();
+    senRes=res;
+  });
+}
+function fechaSen(v){ovSen.hidden=true;if(senRes){const r=senRes;senRes=null;r(v)}}
+async function confirmaSen(){
+  const modo=ovSen.dataset.modo,atual=$("senAtual").value;
+  if(!atual){senErr("Digite a senha.");return}
+  $("senOk").disabled=true;senErr("");
+  if(modo==="troca"){
+    const n=$("senNova").value;
+    if(n.length<4){senErr("A nova senha deve ter pelo menos 4 caracteres.");$("senOk").disabled=false;return}
+    if(n!==$("senConf").value){senErr("A confirmação não confere com a nova senha.");$("senOk").disabled=false;return}
+    const{data,error}=await sb.rpc("escala_trocar_senha",{p_atual:atual,p_nova:n});
+    if(error||data!==true){senErr(error&&!/SENHA_INCORRETA/.test(error.message)?"Erro: "+error.message:"Senha atual incorreta.");$("senOk").disabled=false;return}
+    senhaEd=n;fechaSen(true);alert("Senha alterada. A nova senha vale em qualquer computador.");return;
+  }
+  const{data,error}=await sb.rpc("escala_senha_ok",{p_senha:atual});
+  if(error){senErr("Erro: "+error.message);$("senOk").disabled=false;return}
+  if(data!==true){senErr("Senha incorreta.");$("senOk").disabled=false;$("senAtual").select();return}
+  senhaEd=atual;fechaSen(true);
+}
+$("senOk").onclick=confirmaSen;$("senCan").onclick=$("senX").onclick=()=>fechaSen(false);
+ovSen.addEventListener("mousedown",e=>{if(e.target===ovSen)fechaSen(false)});
+ovSen.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();confirmaSen()}else if(e.key==="Escape"){e.stopPropagation();fechaSen(false)}});
+const pedeSenha=async()=>senhaEd?true:dialogoSenha("entrar");
+
+/* Menu do botão direito: tabela visível e quadros ABT/AJA (exige a senha de edição) */
+function mostraMenu(x,y,cel,lin,mod){
   let h="",id="";
   if(cel){
     id=cel.dataset.id||"";const d=cel.dataset.d;
@@ -384,15 +432,26 @@ document.addEventListener("contextmenu",e=>{
   if(id){const f=apms.find(x=>x.id===id);h+=`<button data-act="ferias" data-id="${id}" data-v="${f&&f.ferias?0:1}">${f&&f.ferias?"Remover férias":"Marcar férias"}</button>`}
   if(id)h+=`<button data-act="edit" data-id="${id}">Editar servidor</button><button class="d" data-act="del" data-id="${id}">Excluir servidor</button>`;
   if(mod)h+=`<button data-act="add" data-ag="${agAberta}">Adicionar servidor na ${agAberta}</button>`;
+  h+=`<button data-act="senha">Alterar senha</button>`;
   menu.innerHTML=h;
   menu.style.display="block";
-  menu.style.left=Math.min(e.clientX,innerWidth-menu.offsetWidth-8)+"px";
-  menu.style.top=Math.min(e.clientY,innerHeight-menu.offsetHeight-8)+"px";
+  menu.style.left=Math.min(x,innerWidth-menu.offsetWidth-8)+"px";
+  menu.style.top=Math.min(y,innerHeight-menu.offsetHeight-8)+"px";
+}
+document.addEventListener("contextmenu",async e=>{
+  if(!podeEditar)return;
+  const cel=e.target.closest("#t2 td[data-d]"),lin=e.target.closest("#baixo tr[data-id]"),mod=e.target.closest("#modal");
+  if(!cel&&!mod)return;
+  e.preventDefault();
+  const x=e.clientX,y=e.clientY;
+  if(!senhaEd&&!await pedeSenha())return;
+  mostraMenu(x,y,cel,lin,mod);
 });
 menu.addEventListener("click",async e=>{
   const b=e.target.closest("button");if(!b)return;
   const act=b.dataset.act,id=b.dataset.id;menu.style.display="none";
   await endEdit();
+  if(act==="senha"){await dialogoSenha("troca");return}
   if(act==="addnew"){abreAdd(b.dataset.d);return}
   await carregar();
   if(act==="edit"){if(apms.some(x=>x.id===id))abrir(id)}
@@ -410,6 +469,7 @@ document.addEventListener("click",e=>{
   if(editId&&!e.target.closest("tr.ed")&&!e.target.closest("#menu"))endEdit();
 });
 document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;
+  if(!ovSen.hidden){fechaSen(false);return}
   if(!ovAdd.hidden){fechaAdd();return}
   if(menu.style.display==="block"){menu.style.display="none";return}
   if(editId){endEdit();return}
@@ -439,10 +499,9 @@ $("voltar").addEventListener("click",e=>{
     const{data:p}=await sb.from("perfis").select("aprovado").eq("id",session.user.id).maybeSingle();
     if(!p||p.aprovado!==true)return location.replace("index.html");
     usuario=session.user.email||"";
-    const{data:ed}=await sb.from("escala_editores").select("email").maybeSingle();
-    podeEditar=!!ed;
+    podeEditar=true;
     await carregar();
-    if(versao===null&&podeEditar){apms=semente();await salvar()}
+    if(versao===null){apms=semente();render()}
     liberar();render();
   }catch(e){liberar();st("Erro de conexão");render()}
 })();
