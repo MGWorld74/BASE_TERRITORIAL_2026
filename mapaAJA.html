@@ -404,11 +404,16 @@
       try { const a = JSON.parse(localStorage.getItem('apms_lista') || 'null'); if (Array.isArray(a)) a.forEach(n => n && nomes.add(n)); } catch (e) {}
       return [...nomes].sort((a, b) => a.localeCompare(b, 'pt-BR'));
     }
+    let servidorAtual = '';   // servidor escolhido na caixa (guardado em variável, não lido do elemento no clique)
     function carregarServidores() {
-      const sel = $('selServidor'), atual = sel.value, lista = listaServidores();
+      const sel = $('selServidor'), lista = listaServidores(), assin = lista.join('\u0001');
+      if (sel.dataset.assin === assin) return;       // lista não mudou
+      if (document.activeElement === sel) return;    // não mexe na caixa enquanto o usuário escolhe
       sel.innerHTML = '<option value="">(sem servidor)</option>' +
         lista.map(n => `<option value="${escHtml(n)}">${escHtml(n)}</option>`).join('');
-      sel.value = lista.includes(atual) ? atual : '';
+      sel.dataset.assin = assin;
+      sel.value = lista.includes(servidorAtual) ? servidorAtual : '';
+      servidorAtual = sel.value;
       sel.title = lista.length ? 'Servidor que será associado aos próximos setores clicados'
         : 'Nenhum servidor encontrado. Cadastre os nomes na coluna APM da planilha ou em "APMs" no setoresAJA.html.';
     }
@@ -458,6 +463,7 @@
         if (gravando || pendentes.size || t0 < ultimaGravacao) return;   // leitura ficou velha
         servidoresRemotos.clear();
         remoto.forEach(n => { if (n) servidoresRemotos.add(n); });
+        carregarServidores();
         setores.forEach((it, c) => {
           if (it.sel) return;                       // seleção em andamento neste computador
           if (remoto.has(c)) {
@@ -478,7 +484,7 @@
         selecionados.delete(item.codigo); item.sel = false; item.usado = false; item.servidor = '';
         if (eraUsado) { pendentes.set(item.codigo, null); gravarPendentes(); }
       }
-      else { selecionados.set(item.codigo, item); item.sel = true; item.servidor = $('selServidor').value; }
+      else { selecionados.set(item.codigo, item); item.sel = true; item.servidor = servidorAtual; }
       item.layer.setStyle(estiloDe(item, true));
       if (item.sel) item.layer.bringToFront();
       atualizarContagem();
@@ -540,8 +546,7 @@
         if (!modoSelecao) encerrarSelecao();
         atualizarContagem();
       });
-      $('selServidor').addEventListener('mousedown', carregarServidores);
-      $('selServidor').addEventListener('focus', carregarServidores);
+      $('selServidor').addEventListener('change', e => { servidorAtual = e.target.value; });
       $('selCopiar').addEventListener('click', copiarSelecao);
       $('selLimpar').addEventListener('click', limparSelecao);
     })();
@@ -669,6 +674,7 @@
           document.body.appendChild(el);
         }
         el.textContent = 'Prioridades (v3): CNEFE ' + nC + ' · PNAD ' + nP + (iPri < 0 ? ' · coluna não encontrada na planilha' : daPlanilha ? '' : ' · coluna sem valores na planilha');
+        carregarServidores();
         setores.forEach((item, codigo) => {
           const novo = concluidos.has(codigo), novoR = riscos.has(codigo), novoP = prioridades.get(codigo) || '';
           if (novo !== item.concluido || novoR !== item.risco || novoP !== item.pri) {
